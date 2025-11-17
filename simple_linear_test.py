@@ -177,7 +177,8 @@ def set_control_with_timing(cc: CloudCompile, control_num: int, value: int) -> N
         raise
 
 
-def main():
+def handle_arg_parsing():
+    """Parse command line arguments and configure logging."""
     parser = argparse.ArgumentParser(
         description='Linear test for Moku Control10 register with timing introspection',
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -243,6 +244,12 @@ Examples:
             'moku_delta': 4,
         }
         platform_id = platform_map[args.platform]
+    
+    return args, platform_id
+
+
+def main():
+    args, platform_id = handle_arg_parsing()
     
     # Overall timing
     total_start = time.perf_counter()
