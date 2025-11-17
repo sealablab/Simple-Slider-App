@@ -71,6 +71,115 @@ def find_cloudcompile_slot(moku: MultiInstrument) -> int | None:
 
 
 
+def extra_sanity_checking(moku: MultiInstrument, args, platform_id: int | None, 
+                          total_start: float) -> None:
+    """
+    Perform extra sanity checking and execute the main test operations.
+    
+    This function handles:
+    - Finding/validating CloudCompile slot
+    - Resolving bitstream path
+    - Getting CloudCompile instance
+    - Setting power levels sequentially
+    - Generating summary
+    
+    Args:
+        moku: Connected MultiInstrument instance
+        args: Parsed command line arguments
+        platform_id: Platform ID (if specified)
+        total_start: Start time for overall timing
+    """
+    # Find CloudCompile slot
+    if args.slot:
+        slot_num = args.slot
+        # Verify slot exists
+        with time_operation("Verifying slot exists"):
+            instruments = moku.get_instruments() or []
+            if slot_num < 1 or slot_num > len(instruments):
+                logger.error(f"Slot {slot_num} does not exist (device has {len(instruments)} slot(s))")
+                sys.exit(1)
+        
+        # If bitstream is provided, we can deploy to this slot even if it's not CloudCompile
+        if args.bitstream:
+            instrument_name = instruments[slot_num - 1] if slot_num <= len(instruments) else None
+            if instrument_name and instrument_name.strip() and instrument_name.strip() != 'CloudCompile':
+                logger.warning(f"Slot {slot_num} contains '{instrument_name}'. Will deploy CloudCompile with bitstream.")
+        else:
+            # Without bitstream, verify it's actually CloudCompile
+            instrument_name = instruments[slot_num - 1]
+            if not instrument_name or instrument_name.strip() != 'CloudCompile':
+                logger.error(f"Slot {slot_num} contains '{instrument_name}', not CloudCompile. Use --bitstream to deploy.")
+                sys.exit(1)
+    else:
+        # Auto-detect CloudCompile slot
+        slot_num = find_cloudcompile_slot(moku)
+        if slot_num is None:
+            if args.bitstream:
+                # If bitstream provided but no CloudCompile found, default to slot 1
+                slot_num = 1
+                logger.info(f"No CloudCompile found. Will deploy to slot {slot_num} with bitstream.")
+            else:
+                logger.error("No CloudCompile instrument found. Please specify --slot or provide --bitstream")
+                sys.exit(1)
+        else:
+            logger.info(f"Found CloudCompile in slot {slot_num}")
+    
+    # Resolve bitstream path if provided
+    bitstream_path = None
+    if args.bitstream:
+        bitstream_path = args.bitstream
+        # Resolve relative paths
+        if not bitstream_path.is_absolute():
+            bitstream_path = PROJECT_ROOT / bitstream_path
+        if not bitstream_path.exists():
+            logger.error(f"Bitstream file not found: {bitstream_path}")
+            sys.exit(1)
+        logger.info(f"Using bitstream: {bitstream_path.name}")
+    
+    # Get CloudCompile instance
+    logger.info(f"Accessing CloudCompile in slot {slot_num}...")
+    try:
+        with time_operation("Getting CloudCompile instance"):
+            cc = get_cloudcompile_instance(moku, slot_num, bitstream_path)
+        if bitstream_path:
+            logger.success("CloudCompile instance ready (bitstream uploaded)")
+        else:
+            logger.success("CloudCompile instance ready")
+    except Exception as e:
+        logger.error(f"Failed to get CloudCompile instance: {e}")
+        sys.exit(1)
+    
+    # Set power levels sequentially: 10%, 20%, 30%
+    logger.info("\n" + "="*60)
+    logger.info("TIMING INTROSPECTION - Control10 Operations")
+    logger.info("="*60)
+    power_levels = [10.0, 20.0, 30.0]
+    
+    logger.info("\n" + "="*60)
+    logger.info("Setting power levels sequentially")
+    logger.info("="*60)
+    
+    for percent in power_levels:
+        register_value = percent_to_register(percent)
+        try:
+            set_control_with_timing(cc, 10, register_value)
+        except Exception as e:
+            error_msg = str(e)
+            if "timeout" in error_msg.lower() or "timed out" in error_msg.lower():
+                logger.warning(f"  ⚠️  Continuing despite timeout...")
+            else:
+                # Re-raise non-timeout exceptions
+                raise
+    
+    # Summary
+    total_elapsed = time.perf_counter() - total_start
+    logger.info("\n" + "="*60)
+    logger.info("SUMMARY")
+    logger.info("="*60)
+    logger.info(f"Total execution time: {total_elapsed:.3f} s ({total_elapsed*1000:.2f} ms)")
+    logger.info(f"Power levels set: {', '.join(f'{p}%' for p in power_levels)}")
+
+
 def set_control_with_timing(cc: CloudCompile, control_num: int, value: int) -> None:
     """Set control value with detailed timing breakdown."""
     logger.info(f"\nSetting Control{control_num} to {value} ({register_to_percent(value):.2f}%)")
@@ -133,95 +242,7 @@ Examples:
         sys.exit(1)
     
     try:
-        # Find CloudCompile slot
-        if args.slot:
-            slot_num = args.slot
-            # Verify slot exists
-            with time_operation("Verifying slot exists"):
-                instruments = moku.get_instruments() or []
-                if slot_num < 1 or slot_num > len(instruments):
-                    logger.error(f"Slot {slot_num} does not exist (device has {len(instruments)} slot(s))")
-                    sys.exit(1)
-            
-            # If bitstream is provided, we can deploy to this slot even if it's not CloudCompile
-            if args.bitstream:
-                instrument_name = instruments[slot_num - 1] if slot_num <= len(instruments) else None
-                if instrument_name and instrument_name.strip() and instrument_name.strip() != 'CloudCompile':
-                    logger.warning(f"Slot {slot_num} contains '{instrument_name}'. Will deploy CloudCompile with bitstream.")
-            else:
-                # Without bitstream, verify it's actually CloudCompile
-                instrument_name = instruments[slot_num - 1]
-                if not instrument_name or instrument_name.strip() != 'CloudCompile':
-                    logger.error(f"Slot {slot_num} contains '{instrument_name}', not CloudCompile. Use --bitstream to deploy.")
-                    sys.exit(1)
-        else:
-            # Auto-detect CloudCompile slot
-            slot_num = find_cloudcompile_slot(moku)
-            if slot_num is None:
-                if args.bitstream:
-                    # If bitstream provided but no CloudCompile found, default to slot 1
-                    slot_num = 1
-                    logger.info(f"No CloudCompile found. Will deploy to slot {slot_num} with bitstream.")
-                else:
-                    logger.error("No CloudCompile instrument found. Please specify --slot or provide --bitstream")
-                    sys.exit(1)
-            else:
-                logger.info(f"Found CloudCompile in slot {slot_num}")
-        
-        # Resolve bitstream path if provided
-        bitstream_path = None
-        if args.bitstream:
-            bitstream_path = args.bitstream
-            # Resolve relative paths
-            if not bitstream_path.is_absolute():
-                bitstream_path = PROJECT_ROOT / bitstream_path
-            if not bitstream_path.exists():
-                logger.error(f"Bitstream file not found: {bitstream_path}")
-                sys.exit(1)
-            logger.info(f"Using bitstream: {bitstream_path.name}")
-        
-        # Get CloudCompile instance
-        logger.info(f"Accessing CloudCompile in slot {slot_num}...")
-        try:
-            with time_operation("Getting CloudCompile instance"):
-                cc = get_cloudcompile_instance(moku, slot_num, bitstream_path)
-            if bitstream_path:
-                logger.success("CloudCompile instance ready (bitstream uploaded)")
-            else:
-                logger.success("CloudCompile instance ready")
-        except Exception as e:
-            logger.error(f"Failed to get CloudCompile instance: {e}")
-            sys.exit(1)
-        
-        # Set power levels sequentially: 10%, 20%, 30%
-        logger.info("\n" + "="*60)
-        logger.info("TIMING INTROSPECTION - Control10 Operations")
-        logger.info("="*60)
-        power_levels = [10.0, 20.0, 30.0]
-        
-        logger.info("\n" + "="*60)
-        logger.info("Setting power levels sequentially")
-        logger.info("="*60)
-        
-        for percent in power_levels:
-            register_value = percent_to_register(percent)
-            try:
-                set_control_with_timing(cc, 10, register_value)
-            except Exception as e:
-                error_msg = str(e)
-                if "timeout" in error_msg.lower() or "timed out" in error_msg.lower():
-                    logger.warning(f"  ⚠️  Continuing despite timeout...")
-                else:
-                    # Re-raise non-timeout exceptions
-                    raise
-        
-        # Summary
-        total_elapsed = time.perf_counter() - total_start
-        logger.info("\n" + "="*60)
-        logger.info("SUMMARY")
-        logger.info("="*60)
-        logger.info(f"Total execution time: {total_elapsed:.3f} s ({total_elapsed*1000:.2f} ms)")
-        logger.info(f"Power levels set: {', '.join(f'{p}%' for p in power_levels)}")
+        extra_sanity_checking(moku, args, platform_id, total_start)
         
     except KeyboardInterrupt:
         logger.warning("\nInterrupted by user")
