@@ -104,9 +104,15 @@ def parse_platform_id(args) -> Optional[int]:
 
 
 def setup_moku_debug_logging(args) -> None:
-    """Enable Moku debug logging if --debug flag is set."""
+    """Enable Moku debug logging if --debug flag is set.
+    
+    Uses the same stream (stderr) as loguru so that Moku debug logs
+    are formatted consistently with the rest of the application output.
+    """
     if args.debug and moku_logging:
-        moku_logging.enable_debug_logging()
+        # Use sys.stderr to match loguru's default sink
+        # This ensures Moku debug logs go through the same stream as loguru
+        moku_logging.enable_debug_logging(stream=sys.stderr)
         logger.info("Moku debug logging enabled")
 
 
