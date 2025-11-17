@@ -26,22 +26,37 @@ MOKU_MODELS = PROJECT_ROOT / "moku-models-v4"
 sys.path.insert(0, str(MOKU_MODELS))
 
 try:
+    from loguru import logger
+except ImportError:
+    print("Error: loguru not installed. Run: uv sync")
+    sys.exit(1)
+
+try:
     from moku.instruments import MultiInstrument, CloudCompile
     from moku import logging as moku_logging
 except ImportError:
-    print("Error: moku library not installed. Run: uv sync")
+    logger.error("moku library not installed. Run: uv sync")
     sys.exit(1)
+
+# Configure loguru with nice formatting
+logger.remove()  # Remove default handler
+logger.add(
+    sys.stderr,
+    format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
+    level="INFO",
+    colorize=True
+)
 
 
 @contextmanager
 def time_operation(operation_name: str):
-    """Context manager to time an operation and print the result."""
+    """Context manager to time an operation and log the result."""
     start = time.perf_counter()
     try:
         yield
     finally:
         elapsed = time.perf_counter() - start
-        print(f"  {operation_name}: {elapsed*1000:.2f} ms")
+        logger.info(f"  {operation_name}: {elapsed*1000:.2f} ms")
 
 
 def percent_to_register(percent: float) -> int:
@@ -85,7 +100,7 @@ def connect_to_device(device_ip: str, platform_id: int | None = None, force: boo
                         persist_state=True,  # Preserve existing state
                         read_timeout=5  # 5 second timeout for faster failure detection
                     )
-                    print(f"✓ Connected to {platform_id_map[pid]} at {device_ip}")
+                    logger.success(f"Connected to {platform_id_map[pid]} at {device_ip}")
                     return moku
                 except Exception as e:
                     error_msg = str(e).lower()
@@ -103,7 +118,7 @@ def connect_to_device(device_ip: str, platform_id: int | None = None, force: boo
                 read_timeout=5  # 5 second timeout for faster failure detection
             )
             platform_name = platform_id_map.get(platform_id, f"Platform {platform_id}")
-            print(f"✓ Connected to {platform_name} at {device_ip}")
+            logger.success(f"Connected to {platform_name} at {device_ip}")
             return moku
 
 
@@ -142,23 +157,23 @@ def get_cloudcompile_instance(moku: MultiInstrument, slot_num: int, bitstream_pa
 
 def set_control_with_timing(cc: CloudCompile, control_num: int, value: int) -> None:
     """Set control value with detailed timing breakdown."""
-    print(f"\nSetting Control{control_num} to {value} ({register_to_percent(value):.2f}%)")
+    logger.info(f"\nSetting Control{control_num} to {value} ({register_to_percent(value):.2f}%)")
     
     # Time the actual set_control call
     start = time.perf_counter()
     try:
         cc.set_control(control_num, value)
         elapsed = time.perf_counter() - start
-        print(f"  set_control({control_num}, {value}): {elapsed*1000:.2f} ms")
+        logger.info(f"  set_control({control_num}, {value}): {elapsed*1000:.2f} ms")
     except Exception as e:
         elapsed = time.perf_counter() - start
         error_msg = str(e)
         if "timeout" in error_msg.lower() or "timed out" in error_msg.lower():
-            print(f"  set_control({control_num}, {value}) TIMED OUT after {elapsed*1000:.2f} ms")
-            print(f"  ⚠️  This may indicate a device/firmware issue. The operation may have succeeded despite the timeout.")
-            print(f"  Error details: {error_msg}")
+            logger.warning(f"  set_control({control_num}, {value}) TIMED OUT after {elapsed*1000:.2f} ms")
+            logger.warning(f"  ⚠️  This may indicate a device/firmware issue. The operation may have succeeded despite the timeout.")
+            logger.warning(f"  Error details: {error_msg}")
         else:
-            print(f"  set_control({control_num}, {value}) FAILED after {elapsed*1000:.2f} ms: {e}")
+            logger.error(f"  set_control({control_num}, {value}) FAILED after {elapsed*1000:.2f} ms: {e}")
         raise
 
 
@@ -205,11 +220,18 @@ Examples:
         type=Path,
         help='Path to bitstream file (.tar) to upload to CloudCompile'
     )
+    parser.add_argument(
+        '--debug',
+        action='store_true',
+        help='Enable debug logging for Moku library'
+    )
     
     args = parser.parse_args()
     
-    # Enable debug logging for Moku library
-    moku_logging.enable_debug_logging()
+    # Enable Moku debug logging if requested
+    if args.debug:
+        moku_logging.enable_debug_logging()
+        logger.info("Moku debug logging enabled")
     
     # Map platform name to ID
     platform_id = None
@@ -229,11 +251,11 @@ Examples:
     moku = None
     
     # Connect to device
-    print(f"Connecting to {args.device_ip}...")
+    logger.info(f"Connecting to {args.device_ip}...")
     try:
         moku = connect_to_device(args.device_ip, platform_id, force=args.force)
     except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
+        logger.error(f"Connection failed: {e}")
         sys.exit(1)
     
     try:
@@ -244,19 +266,19 @@ Examples:
             with time_operation("Verifying slot exists"):
                 instruments = moku.get_instruments() or []
                 if slot_num < 1 or slot_num > len(instruments):
-                    print(f"Error: Slot {slot_num} does not exist", file=sys.stderr)
+                    logger.error(f"Slot {slot_num} does not exist (device has {len(instruments)} slot(s))")
                     sys.exit(1)
             
             # If bitstream is provided, we can deploy to this slot even if it's not CloudCompile
             if args.bitstream:
                 instrument_name = instruments[slot_num - 1] if slot_num <= len(instruments) else None
                 if instrument_name and instrument_name.strip() and instrument_name.strip() != 'CloudCompile':
-                    print(f"Warning: Slot {slot_num} contains '{instrument_name}'. Will deploy CloudCompile with bitstream.", file=sys.stderr)
+                    logger.warning(f"Slot {slot_num} contains '{instrument_name}'. Will deploy CloudCompile with bitstream.")
             else:
                 # Without bitstream, verify it's actually CloudCompile
                 instrument_name = instruments[slot_num - 1]
                 if not instrument_name or instrument_name.strip() != 'CloudCompile':
-                    print(f"Error: Slot {slot_num} contains '{instrument_name}', not CloudCompile. Use --bitstream to deploy.", file=sys.stderr)
+                    logger.error(f"Slot {slot_num} contains '{instrument_name}', not CloudCompile. Use --bitstream to deploy.")
                     sys.exit(1)
         else:
             # Auto-detect CloudCompile slot
@@ -265,12 +287,12 @@ Examples:
                 if args.bitstream:
                     # If bitstream provided but no CloudCompile found, default to slot 1
                     slot_num = 1
-                    print(f"No CloudCompile found. Will deploy to slot {slot_num} with bitstream.")
+                    logger.info(f"No CloudCompile found. Will deploy to slot {slot_num} with bitstream.")
                 else:
-                    print("Error: No CloudCompile instrument found. Please specify --slot or provide --bitstream", file=sys.stderr)
+                    logger.error("No CloudCompile instrument found. Please specify --slot or provide --bitstream")
                     sys.exit(1)
             else:
-                print(f"Found CloudCompile in slot {slot_num}")
+                logger.info(f"Found CloudCompile in slot {slot_num}")
         
         # Resolve bitstream path if provided
         bitstream_path = None
@@ -280,31 +302,31 @@ Examples:
             if not bitstream_path.is_absolute():
                 bitstream_path = PROJECT_ROOT / bitstream_path
             if not bitstream_path.exists():
-                print(f"Error: Bitstream file not found: {bitstream_path}", file=sys.stderr)
+                logger.error(f"Bitstream file not found: {bitstream_path}")
                 sys.exit(1)
-            print(f"Using bitstream: {bitstream_path.name}")
+            logger.info(f"Using bitstream: {bitstream_path.name}")
         
         # Get CloudCompile instance
-        print(f"\nAccessing CloudCompile in slot {slot_num}...")
+        logger.info(f"Accessing CloudCompile in slot {slot_num}...")
         try:
             cc = get_cloudcompile_instance(moku, slot_num, bitstream_path)
             if bitstream_path:
-                print(f"✓ CloudCompile instance ready (bitstream uploaded)")
+                logger.success("CloudCompile instance ready (bitstream uploaded)")
             else:
-                print("✓ CloudCompile instance ready")
+                logger.success("CloudCompile instance ready")
         except Exception as e:
-            print(f"Error: {e}", file=sys.stderr)
+            logger.error(f"Failed to get CloudCompile instance: {e}")
             sys.exit(1)
         
         # Set power levels sequentially: 10%, 20%, 30%
-        print("\n" + "="*60)
-        print("TIMING INTROSPECTION - Control10 Operations")
-        print("="*60)
+        logger.info("\n" + "="*60)
+        logger.info("TIMING INTROSPECTION - Control10 Operations")
+        logger.info("="*60)
         power_levels = [10.0, 20.0, 30.0]
         
-        print("\n" + "="*60)
-        print("Setting power levels sequentially")
-        print("="*60)
+        logger.info("\n" + "="*60)
+        logger.info("Setting power levels sequentially")
+        logger.info("="*60)
         
         for percent in power_levels:
             register_value = percent_to_register(percent)
@@ -313,36 +335,35 @@ Examples:
             except Exception as e:
                 error_msg = str(e)
                 if "timeout" in error_msg.lower() or "timed out" in error_msg.lower():
-                    print(f"  ⚠️  Continuing despite timeout...")
+                    logger.warning(f"  ⚠️  Continuing despite timeout...")
                 else:
                     # Re-raise non-timeout exceptions
                     raise
         
         # Summary
         total_elapsed = time.perf_counter() - total_start
-        print("\n" + "="*60)
-        print("SUMMARY")
-        print("="*60)
-        print(f"Total execution time: {total_elapsed:.3f} s ({total_elapsed*1000:.2f} ms)")
-        print(f"Power levels set: {', '.join(f'{p}%' for p in power_levels)}")
+        logger.info("\n" + "="*60)
+        logger.info("SUMMARY")
+        logger.info("="*60)
+        logger.info(f"Total execution time: {total_elapsed:.3f} s ({total_elapsed*1000:.2f} ms)")
+        logger.info(f"Power levels set: {', '.join(f'{p}%' for p in power_levels)}")
         
     except KeyboardInterrupt:
-        print("\n\nInterrupted by user")
+        logger.warning("\nInterrupted by user")
     except Exception as e:
-        print(f"\nError: {e}", file=sys.stderr)
-        import traceback
-        traceback.print_exc()
+        logger.error(f"Unexpected error: {e}")
+        logger.debug("Exception details:", exc_info=True)
         sys.exit(1)
     finally:
         # Disconnect
         if moku is not None:
-            print("\nDisconnecting...")
+            logger.info("\nDisconnecting...")
             with time_operation("Disconnect (relinquish_ownership)"):
                 try:
                     moku.relinquish_ownership()
-                    print("✓ Disconnected")
+                    logger.success("Disconnected")
                 except Exception as e:
-                    print(f"  Disconnect warning: {e}")
+                    logger.warning(f"Disconnect warning: {e}")
 
 
 if __name__ == "__main__":

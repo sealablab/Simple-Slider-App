@@ -1,0 +1,107 @@
+Script started on Mon Nov 17 15:12:56 2025
+[1m[7m%[27m[1m[0m                                                                                                             ]2;johnycsh@DRP-e1:~/workspace/SimpleSliderApp]1;..mpleSliderApp]7;file://DRP-e1.local/Users/johnycsh/workspace/SimpleSliderApp\[0m[27m[24m[J[01;32m➜  [36mSimpleSliderApp[00m [K[?1h=[?2004h[0m[27m[24m[J[01;32m➜  [36mSimpleSliderApp[00m [01;34mgit:([31mtextual_no_moku[34m) [33m✗[00m [Kuv  run control_slider.py --platform moku_go --bitstream ./simple_slider_cr10_bits.tar --force  192.168.13.147[K[A[2Cactivate[K[1B[K[A[54C[8D run control_slider.py --platform moku_go --bitstream ./simple_slider_cr10_bits.tar --force  192.168.13.147[K[A[2Cactivate[K[1B[K[A[54C[11Dls         [9Dcd /Users/johnycsh/workspace/SimpleSliderApp[44Dpwd                                         [41Dbashpwd cd /Users/johnycsh/workspace/SimpleSliderApp[44Dls                                          [42Duv activate[8D run control_slider.py --platform moku_go --bitstream ./simple_slider_cr10_bits.tar --force  192.168.13.147[K[A[K[1B[K[A[43Cuv  run control_slider.py --platform moku_go --bitstream ./simple_slider_cr10_bits.tar --force  192.168.13.147[K[A[1C[1C[1C[1C[1C[1C[1C[1C[1C[1C[1C[1C[1C[1C[1C[1C[1C[1C[1C[1C[1C[1C[P[44Csl[P[42C [A[20C[P[45Cli[P[41C [A[20C[P[46Cid[P[40C [A[20C[P[47Cde[P[39C [A[20C[P[48Cer[P[38C [A[20C[P[49Cr_[P[37C [A[20C[P[50C_c[P[36C [A[20C[P[51Ccr[P[35C [A[20C[P[52Cr1[P[34C [A[20C[P[53C10[P[33C [A[20C[P[54C0_[P[32C [A[20C[P[55C_b[P[31C [A[20C[P[56Cbi[P[30C [A[20C[P[57Cit[P[29C [A[20Cs.py --platform moku_go --bitstream ./simple_slider_cr10_bits.tar --force  192.168.13.147[A[21Ci.py --platform moku_go --bitstream ./simple_slider_cr10_bits.tar --force  192.168.13.147[A[21Cm.py --platform moku_go --bitstream ./simple_slider_cr10_bits.tar --force  192.168.13.147[A[21Cple_linear_test.py[1m [0m --platform moku_go --bitstream ./simple_slider_cr10_bits.tar --force  192.168.13.147[A[24C[P[36Cmp[P[47C [A[23C[?1l>[?2004l[1B
+]2;uv run simple_linear_test.py --platform moku_go --bitstream  --force ]1;uvConnecting to 192.168.13.147...
+✓ Connected to Moku:Go at 192.168.13.147
+  Device connection: 1893.73 ms
+  Finding CloudCompile slot: 10.81 ms
+Found CloudCompile in slot 2
+Using bitstream: simple_slider_cr10_bits.tar
+
+Accessing CloudCompile in slot 2...
+  Getting CloudCompile instance: 665.07 ms
+✓ CloudCompile instance ready (bitstream uploaded)
+
+============================================================
+TIMING INTROSPECTION - Control10 Operations
+============================================================
+
+Reading Control10
+  get_control(10) FAILED after 349.71 ms: unsupported operand type(s) for &: 'list' and 'int'
+Could not read initial value: unsupported operand type(s) for &: 'list' and 'int'
+
+============================================================
+Setting power levels sequentially
+============================================================
+
+Setting Control10 to 3276 (10.00%)
+  set_control(10, 3276) FAILED after 30003.24 ms: HTTPConnectionPool(host='192.168.13.147', port=80): Read timed out. (read timeout=30)
+
+Error: HTTPConnectionPool(host='192.168.13.147', port=80): Read timed out. (read timeout=30)
+Traceback (most recent call last):
+  File "/Users/johnycsh/workspace/SimpleSliderApp/.venv/lib/python3.12/site-packages/urllib3/connectionpool.py", line 534, in _make_request
+    response = conn.getresponse()
+               ^^^^^^^^^^^^^^^^^^
+  File "/Users/johnycsh/workspace/SimpleSliderApp/.venv/lib/python3.12/site-packages/urllib3/connection.py", line 565, in getresponse
+    httplib_response = super().getresponse()
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/johnycsh/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/http/client.py", line 1428, in getresponse
+    response.begin()
+  File "/Users/johnycsh/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/http/client.py", line 331, in begin
+    version, status, reason = self._read_status()
+                              ^^^^^^^^^^^^^^^^^^^
+  File "/Users/johnycsh/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/http/client.py", line 292, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/johnycsh/.local/share/uv/python/cpython-3.12.8-macos-aarch64-none/lib/python3.12/socket.py", line 720, in readinto
+    return self._sock.recv_into(b)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+TimeoutError: timed out
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/johnycsh/workspace/SimpleSliderApp/.venv/lib/python3.12/site-packages/requests/adapters.py", line 644, in send
+    resp = conn.urlopen(
+           ^^^^^^^^^^^^^
+  File "/Users/johnycsh/workspace/SimpleSliderApp/.venv/lib/python3.12/site-packages/urllib3/connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+              ^^^^^^^^^^^^^^^^^^
+  File "/Users/johnycsh/workspace/SimpleSliderApp/.venv/lib/python3.12/site-packages/urllib3/util/retry.py", line 474, in increment
+    raise reraise(type(error), error, _stacktrace)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/johnycsh/workspace/SimpleSliderApp/.venv/lib/python3.12/site-packages/urllib3/util/util.py", line 39, in reraise
+    raise value
+  File "/Users/johnycsh/workspace/SimpleSliderApp/.venv/lib/python3.12/site-packages/urllib3/connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "/Users/johnycsh/workspace/SimpleSliderApp/.venv/lib/python3.12/site-packages/urllib3/connectionpool.py", line 536, in _make_request
+    self._raise_timeout(err=e, url=url, timeout_value=read_timeout)
+  File "/Users/johnycsh/workspace/SimpleSliderApp/.venv/lib/python3.12/site-packages/urllib3/connectionpool.py", line 367, in _raise_timeout
+    raise ReadTimeoutError(
+urllib3.exceptions.ReadTimeoutError: HTTPConnectionPool(host='192.168.13.147', port=80): Read timed out. (read timeout=30)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/johnycsh/workspace/SimpleSliderApp/simple_linear_test.py", line 326, in main
+    set_control_with_timing(cc, 10, register_value)
+  File "/Users/johnycsh/workspace/SimpleSliderApp/simple_linear_test.py", line 147, in set_control_with_timing
+    cc.set_control(control_num, value)
+  File "/Users/johnycsh/workspace/SimpleSliderApp/.venv/lib/python3.12/site-packages/moku/instruments/_cloudcompile.py", line 129, in set_control
+    return self.session.post(
+           ^^^^^^^^^^^^^^^^^^
+  File "/Users/johnycsh/workspace/SimpleSliderApp/.venv/lib/python3.12/site-packages/moku/session.py", line 22, in func_wrapper
+    response = func(self, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/johnycsh/workspace/SimpleSliderApp/.venv/lib/python3.12/site-packages/moku/session.py", line 84, in post
+    response = self.rs.post(
+               ^^^^^^^^^^^^^
+  File "/Users/johnycsh/workspace/SimpleSliderApp/.venv/lib/python3.12/site-packages/requests/sessions.py", line 637, in post
+    return self.request("POST", url, data=data, json=json, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/johnycsh/workspace/SimpleSliderApp/.venv/lib/python3.12/site-packages/requests/sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/johnycsh/workspace/SimpleSliderApp/.venv/lib/python3.12/site-packages/requests/sessions.py", line 703, in send
+    r = adapter.send(request, **kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/johnycsh/workspace/SimpleSliderApp/.venv/lib/python3.12/site-packages/requests/adapters.py", line 690, in send
+    raise ReadTimeout(e, request=request)
+requests.exceptions.ReadTimeout: HTTPConnectionPool(host='192.168.13.147', port=80): Read timed out. (read timeout=30)
+
+Disconnecting...
+✓ Disconnected
+  Disconnect (relinquish_ownership): 17.48 ms
+[1m[7m%[27m[1m[0m                                                                                                             ]2;johnycsh@DRP-e1:~/workspace/SimpleSliderApp]1;..mpleSliderApp]7;file://DRP-e1.local/Users/johnycsh/workspace/SimpleSliderApp\[0m[27m[24m[J[01;31m➜  [36mSimpleSliderApp[00m [01;34mgit:([31mtextual_no_moku[34m) [33m✗[00m [K[?1h=[?2004h[?2004l
+
+Script done on Mon Nov 17 15:13:55 2025
