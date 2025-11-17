@@ -7,6 +7,8 @@ across scripts.
 
 import argparse
 import sys
+import time
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Optional
 
@@ -21,6 +23,13 @@ try:
 except ImportError:
     # moku_logging is optional - scripts can handle this
     moku_logging = None
+
+try:
+    from moku.instruments import MultiInstrument, CloudCompile
+except ImportError:
+    # These will be imported by scripts that use them
+    MultiInstrument = None
+    CloudCompile = None
 
 
 # Platform name to ID mapping
@@ -153,4 +162,159 @@ def handle_arg_parsing(
     platform_id = parse_platform_id(args)
     
     return args, platform_id
+
+
+@contextmanager
+def time_operation(operation_name: str):
+    """Context manager to time an operation and log the result."""
+    start = time.perf_counter()
+    try:
+        yield
+    finally:
+        elapsed = time.perf_counter() - start
+        logger.info(f"  {operation_name}: {elapsed*1000:.2f} ms")
+
+
+def connect_to_device(device_ip: str, platform_id: int | None = None, force: bool = False, 
+                     read_timeout: Optional[int] = None) -> MultiInstrument:
+    """
+    Connect to Moku device with platform detection.
+    
+    Args:
+        device_ip: IP address of the Moku device
+        platform_id: Optional platform ID (1=Lab, 2=Go, 3=Pro, 4=Delta)
+        force: If True, force connect (disconnect existing connections)
+        read_timeout: Optional read timeout in seconds (default: None)
+    
+    Returns:
+        MultiInstrument instance
+    
+    Raises:
+        ConnectionError: If connection fails
+    """
+    if MultiInstrument is None:
+        raise ImportError("MultiInstrument not available. Import moku.instruments first.")
+    
+    platform_id_map = {
+        1: "Moku:Lab",
+        2: "Moku:Go",
+        3: "Moku:Pro",
+        4: "Moku:Delta",
+    }
+    
+    logger.info(f"Connecting to device at {device_ip}...")
+    logger.debug(f"Platform ID: {platform_id}, Force connect: {force}")
+    
+    if platform_id is None:
+        # Try each platform
+        logger.debug("Auto-detecting platform type...")
+        for pid in [2, 1, 3, 4]:  # Go, Lab, Pro, Delta
+            platform_name = platform_id_map[pid]
+            logger.debug(f"Trying {platform_name} (platform_id={pid})...")
+            try:
+                kwargs = {
+                    'device_ip': device_ip,
+                    'platform_id': pid,
+                    'force_connect': force,
+                    'persist_state': True  # Preserve existing state
+                }
+                if read_timeout is not None:
+                    kwargs['read_timeout'] = read_timeout
+                
+                moku = MultiInstrument(**kwargs)
+                logger.success(f"Connected to {platform_name} at {device_ip}")
+                return moku
+            except Exception as e:
+                error_msg = str(e).lower()
+                logger.debug(f"Failed to connect as {platform_name}: {e}")
+                if "already exists" in error_msg or "busy" in error_msg:
+                    logger.debug("Device is busy, trying next platform...")
+                    continue
+                continue
+        logger.error(f"Could not connect to {device_ip} with any platform type")
+        raise ConnectionError(f"Could not connect to {device_ip}. Try --force to disconnect existing connections.")
+    else:
+        # Use specified platform
+        platform_name = platform_id_map.get(platform_id, f"Platform {platform_id}")
+        logger.debug(f"Using specified platform: {platform_name} (platform_id={platform_id})")
+        try:
+            kwargs = {
+                'device_ip': device_ip,
+                'platform_id': platform_id,
+                'force_connect': force,
+                'persist_state': True
+            }
+            if read_timeout is not None:
+                kwargs['read_timeout'] = read_timeout
+            
+            moku = MultiInstrument(**kwargs)
+            logger.success(f"Connected to {platform_name} at {device_ip}")
+            return moku
+        except Exception as e:
+            logger.error(f"Failed to connect to {platform_name}: {e}")
+            raise
+
+
+def get_cloudcompile_instance(moku: MultiInstrument, slot_num: int, 
+                               bitstream_path: Path | None = None,
+                               require_bitstream: bool = False) -> CloudCompile:
+    """
+    Get CloudCompile instance from specified slot.
+    
+    Args:
+        moku: MultiInstrument instance
+        slot_num: Slot number containing CloudCompile
+        bitstream_path: Optional path to bitstream file. If provided, will upload it.
+        require_bitstream: If True, bitstream_path must be provided and valid
+    
+    Returns:
+        CloudCompile instance
+    
+    Raises:
+        ValueError: If require_bitstream is True but bitstream_path is None
+        FileNotFoundError: If bitstream_path is provided but file doesn't exist
+        RuntimeError: If CloudCompile instance cannot be accessed
+    """
+    if CloudCompile is None:
+        raise ImportError("CloudCompile not available. Import moku.instruments first.")
+    
+    logger.debug(f"Getting CloudCompile instance for slot {slot_num}...")
+    
+    if require_bitstream:
+        if not bitstream_path:
+            raise ValueError("Bitstream path is required for CloudCompile")
+        if not bitstream_path.exists():
+            logger.error(f"Bitstream file not found: {bitstream_path}")
+            raise FileNotFoundError(f"Bitstream file not found: {bitstream_path}")
+        
+        file_size = bitstream_path.stat().st_size
+        logger.debug(f"Bitstream file size: {file_size / (1024*1024):.2f} MB")
+        logger.info(f"Using bitstream: {bitstream_path.name}")
+        logger.debug(f"Bitstream path (absolute): {bitstream_path.absolute()}")
+    
+    try:
+        if bitstream_path:
+            # Upload bitstream and get instance
+            if not bitstream_path.exists():
+                raise FileNotFoundError(f"Bitstream file not found: {bitstream_path}")
+            logger.debug(f"Calling moku.set_instrument({slot_num}, CloudCompile, bitstream={bitstream_path})")
+            cc = moku.set_instrument(slot_num, CloudCompile, bitstream=str(bitstream_path))
+            logger.success(f"CloudCompile instance ready for slot {slot_num}")
+            return cc
+        else:
+            # Try to get existing instance (without bitstream parameter)
+            logger.debug(f"Calling moku.set_instrument({slot_num}, CloudCompile)")
+            cc = moku.set_instrument(slot_num, CloudCompile)
+            logger.success(f"CloudCompile instance ready for slot {slot_num}")
+            return cc
+    except TypeError:
+        # If set_instrument requires bitstream, we can't proceed without it
+        raise RuntimeError(
+            f"CloudCompile in slot {slot_num} requires bitstream parameter. "
+            "The instrument may not be deployed yet. Please provide --bitstream or deploy it first."
+        )
+    except Exception as e:
+        logger.error(f"Exception when accessing CloudCompile in slot {slot_num}: {e}")
+        logger.debug("Exception details:", exc_info=True)
+        raise RuntimeError(f"Could not access CloudCompile in slot {slot_num}: {e}")
 

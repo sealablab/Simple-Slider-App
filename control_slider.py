@@ -38,7 +38,7 @@ except ImportError:
     sys.exit(1)
 
 # Import shared CLI utilities
-from moku_cli_common import handle_arg_parsing
+from moku_cli_common import handle_arg_parsing, connect_to_device, get_cloudcompile_instance
 
 # Configure loguru with nice formatting
 logger.remove()  # Remove default handler
@@ -319,76 +319,6 @@ def find_cloudcompile_slot(moku: MultiInstrument) -> int | None:
     return None
 
 
-def connect_to_device(device_ip: str, platform_id: int | None = None, force: bool = False) -> MultiInstrument:
-    """Connect to Moku device with platform detection."""
-    platform_id_map = {
-        1: "Moku:Lab",
-        2: "Moku:Go",
-        3: "Moku:Pro",
-        4: "Moku:Delta",
-    }
-    
-    if platform_id is None:
-        # Try each platform
-        for pid in [2, 1, 3, 4]:  # Go, Lab, Pro, Delta
-            try:
-                moku = MultiInstrument(
-                    device_ip,
-                    platform_id=pid,
-                    force_connect=force,
-                    persist_state=True  # Preserve existing state
-                )
-                logger.success(f"Connected to {platform_id_map[pid]} at {device_ip}")
-                return moku
-            except Exception as e:
-                error_msg = str(e).lower()
-                if "already exists" in error_msg or "busy" in error_msg:
-                    continue
-                continue
-        raise ConnectionError(f"Could not connect to {device_ip}. Try --force to disconnect existing connections.")
-    else:
-        # Use specified platform
-        moku = MultiInstrument(
-            device_ip,
-            platform_id=platform_id,
-            force_connect=force,
-            persist_state=True
-        )
-        platform_name = platform_id_map.get(platform_id, f"Platform {platform_id}")
-        logger.success(f"Connected to {platform_name} at {device_ip}")
-        return moku
-
-
-def get_cloudcompile_instance(moku: MultiInstrument, slot_num: int, bitstream_path: Path | None = None) -> CloudCompile:
-    """Get CloudCompile instance from specified slot.
-    
-    Args:
-        moku: MultiInstrument instance
-        slot_num: Slot number containing CloudCompile
-        bitstream_path: Optional path to bitstream file. If provided, will upload it.
-    
-    Returns:
-        CloudCompile instance
-    """
-    try:
-        if bitstream_path:
-            # Upload bitstream and get instance
-            if not bitstream_path.exists():
-                raise FileNotFoundError(f"Bitstream file not found: {bitstream_path}")
-            cc = moku.set_instrument(slot_num, CloudCompile, bitstream=str(bitstream_path))
-            return cc
-        else:
-            # Try to get existing instance (without bitstream parameter)
-            cc = moku.set_instrument(slot_num, CloudCompile)
-            return cc
-    except TypeError:
-        # If set_instrument requires bitstream, we can't proceed without it
-        raise RuntimeError(
-            f"CloudCompile in slot {slot_num} requires bitstream parameter. "
-            "The instrument may not be deployed yet. Please provide --bitstream or deploy it first."
-        )
-    except Exception as e:
-        raise RuntimeError(f"Could not access CloudCompile in slot {slot_num}: {e}")
 
 
 
