@@ -37,7 +37,7 @@ except ImportError:
     sys.exit(1)
 
 # Import shared CLI utilities
-from moku_cli_common import handle_arg_parsing
+from moku_cli_common import handle_arg_parsing, connect_to_device, get_cloudcompile_instance, time_operation
 
 # Configure loguru with nice formatting
 logger.remove()  # Remove default handler
@@ -47,17 +47,6 @@ logger.add(
     level="INFO",
     colorize=True
 )
-
-
-@contextmanager
-def time_operation(operation_name: str):
-    """Context manager to time an operation and log the result."""
-    start = time.perf_counter()
-    try:
-        yield
-    finally:
-        elapsed = time.perf_counter() - start
-        logger.info(f"  {operation_name}: {elapsed*1000:.2f} ms")
 
 
 def percent_to_register(percent: float) -> int:
@@ -80,80 +69,6 @@ def find_cloudcompile_slot(moku: MultiInstrument) -> int | None:
         return None
 
 
-def connect_to_device(device_ip: str, platform_id: int | None = None, force: bool = False) -> MultiInstrument:
-    """Connect to Moku device with platform detection."""
-    platform_id_map = {
-        1: "Moku:Lab",
-        2: "Moku:Go",
-        3: "Moku:Pro",
-        4: "Moku:Delta",
-    }
-    
-    with time_operation("Device connection"):
-        if platform_id is None:
-            # Try each platform
-            for pid in [2, 1, 3, 4]:  # Go, Lab, Pro, Delta
-                try:
-                    moku = MultiInstrument(
-                        device_ip,
-                        platform_id=pid,
-                        force_connect=force,
-                        persist_state=True,  # Preserve existing state
-                        read_timeout=5  # 5 second timeout for faster failure detection
-                    )
-                    logger.success(f"Connected to {platform_id_map[pid]} at {device_ip}")
-                    return moku
-                except Exception as e:
-                    error_msg = str(e).lower()
-                    if "already exists" in error_msg or "busy" in error_msg:
-                        continue
-                    continue
-            raise ConnectionError(f"Could not connect to {device_ip}. Try --force to disconnect existing connections.")
-        else:
-            # Use specified platform
-            moku = MultiInstrument(
-                device_ip,
-                platform_id=platform_id,
-                force_connect=force,
-                persist_state=True,
-                read_timeout=5  # 5 second timeout for faster failure detection
-            )
-            platform_name = platform_id_map.get(platform_id, f"Platform {platform_id}")
-            logger.success(f"Connected to {platform_name} at {device_ip}")
-            return moku
-
-
-def get_cloudcompile_instance(moku: MultiInstrument, slot_num: int, bitstream_path: Path | None = None) -> CloudCompile:
-    """Get CloudCompile instance from specified slot.
-    
-    Args:
-        moku: MultiInstrument instance
-        slot_num: Slot number containing CloudCompile
-        bitstream_path: Optional path to bitstream file. If provided, will upload it.
-    
-    Returns:
-        CloudCompile instance
-    """
-    with time_operation("Getting CloudCompile instance"):
-        try:
-            if bitstream_path:
-                # Upload bitstream and get instance
-                if not bitstream_path.exists():
-                    raise FileNotFoundError(f"Bitstream file not found: {bitstream_path}")
-                cc = moku.set_instrument(slot_num, CloudCompile, bitstream=str(bitstream_path))
-                return cc
-            else:
-                # Try to get existing instance (without bitstream parameter)
-                cc = moku.set_instrument(slot_num, CloudCompile)
-                return cc
-        except TypeError:
-            # If set_instrument requires bitstream, we can't proceed without it
-            raise RuntimeError(
-                f"CloudCompile in slot {slot_num} requires bitstream parameter. "
-                "The instrument may not be deployed yet. Please provide --bitstream or deploy it first."
-            )
-        except Exception as e:
-            raise RuntimeError(f"Could not access CloudCompile in slot {slot_num}: {e}")
 
 
 def set_control_with_timing(cc: CloudCompile, control_num: int, value: int) -> None:
@@ -211,7 +126,8 @@ Examples:
     # Connect to device
     logger.info(f"Connecting to {args.device_ip}...")
     try:
-        moku = connect_to_device(args.device_ip, platform_id, force=args.force)
+        with time_operation("Device connection"):
+            moku = connect_to_device(args.device_ip, platform_id, force=args.force, read_timeout=5)
     except Exception as e:
         logger.error(f"Connection failed: {e}")
         sys.exit(1)
@@ -267,7 +183,8 @@ Examples:
         # Get CloudCompile instance
         logger.info(f"Accessing CloudCompile in slot {slot_num}...")
         try:
-            cc = get_cloudcompile_instance(moku, slot_num, bitstream_path)
+            with time_operation("Getting CloudCompile instance"):
+                cc = get_cloudcompile_instance(moku, slot_num, bitstream_path)
             if bitstream_path:
                 logger.success("CloudCompile instance ready (bitstream uploaded)")
             else:
