@@ -14,7 +14,6 @@ Examples:
     python simple_linear_test.py 192.168.1.100 --platform moku_go
 """
 
-import argparse
 import sys
 import time
 from pathlib import Path
@@ -33,10 +32,12 @@ except ImportError:
 
 try:
     from moku.instruments import MultiInstrument, CloudCompile
-    from moku import logging as moku_logging
 except ImportError:
     logger.error("moku library not installed. Run: uv sync")
     sys.exit(1)
+
+# Import shared CLI utilities
+from moku_cli_common import handle_arg_parsing
 
 # Configure loguru with nice formatting
 logger.remove()  # Remove default handler
@@ -177,11 +178,11 @@ def set_control_with_timing(cc: CloudCompile, control_num: int, value: int) -> N
         raise
 
 
-def handle_arg_parsing():
-    """Parse command line arguments and configure logging."""
-    parser = argparse.ArgumentParser(
+
+
+def main():
+    args, platform_id = handle_arg_parsing(
         description='Linear test for Moku Control10 register with timing introspection',
-        formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   # Auto-detect platform and slot
@@ -200,56 +201,6 @@ Examples:
   python simple_linear_test.py 192.168.1.100 --force
         """
     )
-    parser.add_argument('device_ip', help='Moku device IP address')
-    parser.add_argument(
-        '--slot',
-        type=int,
-        help='Slot number containing CloudCompile (auto-detected if not specified)'
-    )
-    parser.add_argument(
-        '--platform',
-        choices=['moku_go', 'moku_lab', 'moku_pro', 'moku_delta'],
-        help='Platform type (auto-detected if not specified)'
-    )
-    parser.add_argument(
-        '--force',
-        action='store_true',
-        help='Force connect (disconnect existing connections)'
-    )
-    parser.add_argument(
-        '--bitstream',
-        type=Path,
-        help='Path to bitstream file (.tar) to upload to CloudCompile'
-    )
-    parser.add_argument(
-        '--debug',
-        action='store_true',
-        help='Enable debug logging for Moku library'
-    )
-    
-    args = parser.parse_args()
-    
-    # Enable Moku debug logging if requested
-    if args.debug:
-        moku_logging.enable_debug_logging()
-        logger.info("Moku debug logging enabled")
-    
-    # Map platform name to ID
-    platform_id = None
-    if args.platform:
-        platform_map = {
-            'moku_go': 2,
-            'moku_lab': 1,
-            'moku_pro': 3,
-            'moku_delta': 4,
-        }
-        platform_id = platform_map[args.platform]
-    
-    return args, platform_id
-
-
-def main():
-    args, platform_id = handle_arg_parsing()
     
     # Overall timing
     total_start = time.perf_counter()

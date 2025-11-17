@@ -13,7 +13,6 @@ Examples:
     python set_and_get_test.py 192.168.1.100 --platform moku_go
 """
 
-import argparse
 import sys
 import time
 from pathlib import Path
@@ -31,10 +30,12 @@ except ImportError:
 
 try:
     from moku.instruments import MultiInstrument, CloudCompile
-    from moku import logging as moku_logging
 except ImportError:
     logger.error("moku library not installed. Run: uv sync")
     sys.exit(1)
+
+# Import shared CLI utilities
+from moku_cli_common import handle_arg_parsing
 
 # Configure loguru with nice formatting
 logger.remove()  # Remove default handler
@@ -111,11 +112,11 @@ def get_cloudcompile_instance(moku: MultiInstrument, slot_num: int) -> CloudComp
         raise RuntimeError(f"Could not access CloudCompile in slot {slot_num}: {e}")
 
 
-def handle_arg_parsing():
-    """Parse command line arguments and configure logging."""
-    parser = argparse.ArgumentParser(
+
+
+def main():
+    args, platform_id = handle_arg_parsing(
         description='Read all control registers from deployed CloudCompile instrument',
-        formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   # Auto-detect platform, use slot 2 (default)
@@ -129,54 +130,9 @@ Examples:
 
   # Force connect (disconnect existing connections)
   python set_and_get_test.py 192.168.1.100 --force
-        """
+        """,
+        default_slot=2
     )
-    parser.add_argument('device_ip', help='Moku device IP address')
-    parser.add_argument(
-        '--slot',
-        type=int,
-        default=2,
-        help='Slot number containing CloudCompile (default: 2)'
-    )
-    parser.add_argument(
-        '--platform',
-        choices=['moku_go', 'moku_lab', 'moku_pro', 'moku_delta'],
-        help='Platform type (auto-detected if not specified)'
-    )
-    parser.add_argument(
-        '--force',
-        action='store_true',
-        help='Force connect (disconnect existing connections)'
-    )
-    parser.add_argument(
-        '--debug',
-        action='store_true',
-        help='Enable debug logging for Moku library'
-    )
-    
-    args = parser.parse_args()
-    
-    # Enable Moku debug logging if requested
-    if args.debug:
-        moku_logging.enable_debug_logging()
-        logger.info("Moku debug logging enabled")
-    
-    # Map platform name to ID
-    platform_id = None
-    if args.platform:
-        platform_map = {
-            'moku_go': 2,
-            'moku_lab': 1,
-            'moku_pro': 3,
-            'moku_delta': 4,
-        }
-        platform_id = platform_map[args.platform]
-    
-    return args, platform_id
-
-
-def main():
-    args, platform_id = handle_arg_parsing()
     
     # Initialize moku to None to handle cleanup in finally block
     moku = None

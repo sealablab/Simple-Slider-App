@@ -14,7 +14,6 @@ Examples:
     python upload_settings.py 192.168.1.100 my_config.mokuconf --bitstream ./my_bitstream.tar --platform moku_go
 """
 
-import argparse
 import sys
 from pathlib import Path
 
@@ -31,10 +30,12 @@ except ImportError:
 
 try:
     from moku.instruments import MultiInstrument, CloudCompile
-    from moku import logging as moku_logging
 except ImportError:
     logger.error("moku library not installed. Run: uv sync")
     sys.exit(1)
+
+# Import shared CLI utilities
+from moku_cli_common import handle_arg_parsing
 
 def setup_logging(verbose: bool = False):
     """Configure loguru with nice formatting."""
@@ -158,76 +159,9 @@ def get_cloudcompile_instance(moku: MultiInstrument, slot_num: int, bitstream_pa
         raise RuntimeError(f"Could not access CloudCompile in slot {slot_num}: {e}")
 
 
-def handle_arg_parsing():
-    """Parse command line arguments, configure logging, and validate config file."""
-    parser = argparse.ArgumentParser(
-        description='Upload settings to Moku CloudCompile instrument',
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  # Auto-detect platform and slot
-  python upload_settings.py 192.168.1.100 my_config.mokuconf
-
-  # Specify slot
-  python upload_settings.py 192.168.1.100 my_config.mokuconf --slot 1
-
-  # Specify platform
-  python upload_settings.py 192.168.1.100 my_config.mokuconf --platform moku_go
-
-  # Load settings (bitstream is required)
-  python upload_settings.py 192.168.1.100 my_config.mokuconf --bitstream ./my_bitstream.tar
-
-  # Force connect (disconnect existing connections)
-  python upload_settings.py 192.168.1.100 my_config.mokuconf --force
-        """
-    )
-    parser.add_argument('device_ip', help='Moku device IP address')
-    parser.add_argument('config_file', type=Path, help='Path to .mokuconf configuration file')
-    parser.add_argument(
-        '--slot',
-        type=int,
-        help='Slot number containing CloudCompile (auto-detected if not specified)'
-    )
-    parser.add_argument(
-        '--platform',
-        choices=['moku_go', 'moku_lab', 'moku_pro', 'moku_delta'],
-        help='Platform type (auto-detected if not specified)'
-    )
-    parser.add_argument(
-        '--force',
-        action='store_true',
-        help='Force connect (disconnect existing connections)'
-    )
-    parser.add_argument(
-        '--bitstream',
-        type=Path,
-        required=True,
-        help='Path to bitstream file (.tar) - REQUIRED: CloudCompile always needs a bitstream, even for existing instances'
-    )
-    parser.add_argument(
-        '--verbose', '-v',
-        action='store_true',
-        help='Enable verbose/debug logging output'
-    )
-    parser.add_argument(
-        '--debug',
-        action='store_true',
-        help='Enable debug logging for Moku library'
-    )
-    
-    args = parser.parse_args()
-    
-    # Setup logging based on verbosity
-    setup_logging(verbose=args.verbose)
-    
-    # Enable Moku debug logging if requested
-    if args.debug:
-        moku_logging.enable_debug_logging()
-        logger.info("Moku debug logging enabled")
-    
-    # Validate config file
+def validate_config_file(config_path: Path) -> Path:
+    """Validate and resolve config file path."""
     logger.debug("Validating configuration file...")
-    config_path = args.config_file
     logger.debug(f"Config file path (provided): {config_path}")
     
     if not config_path.is_absolute():
@@ -249,23 +183,41 @@ Examples:
             sys.exit(0)
         logger.debug("User confirmed to continue with non-standard extension")
     
-    # Map platform name to ID
-    platform_id = None
-    if args.platform:
-        platform_map = {
-            'moku_go': 2,
-            'moku_lab': 1,
-            'moku_pro': 3,
-            'moku_delta': 4,
-        }
-        platform_id = platform_map[args.platform]
-        logger.debug(f"Mapped platform '{args.platform}' to platform_id={platform_id}")
-    
-    return args, platform_id, config_path
+    return config_path
 
 
 def main():
-    args, platform_id, config_path = handle_arg_parsing()
+    args, platform_id = handle_arg_parsing(
+        description='Upload settings to Moku CloudCompile instrument',
+        epilog="""
+Examples:
+  # Auto-detect platform and slot
+  python upload_settings.py 192.168.1.100 my_config.mokuconf
+
+  # Specify slot
+  python upload_settings.py 192.168.1.100 my_config.mokuconf --slot 1
+
+  # Specify platform
+  python upload_settings.py 192.168.1.100 my_config.mokuconf --platform moku_go
+
+  # Load settings (bitstream is required)
+  python upload_settings.py 192.168.1.100 my_config.mokuconf --bitstream ./my_bitstream.tar
+
+  # Force connect (disconnect existing connections)
+  python upload_settings.py 192.168.1.100 my_config.mokuconf --force
+        """,
+        require_bitstream=True,
+        add_verbose=True,
+        additional_positional=[
+            ('config_file', {'type': Path, 'help': 'Path to .mokuconf configuration file'})
+        ]
+    )
+    
+    # Setup logging based on verbosity (upload_settings has its own setup_logging)
+    setup_logging(verbose=args.verbose)
+    
+    # Validate config file
+    config_path = validate_config_file(args.config_file)
     
     # Connect to device
     logger.info(f"Connecting to {args.device_ip}...")
