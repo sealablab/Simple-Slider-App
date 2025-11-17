@@ -213,7 +213,6 @@ def connect_to_device(device_ip: str, platform_id: int | None = None, force: boo
             logger.debug(f"Trying {platform_name} (platform_id={pid})...")
             try:
                 kwargs = {
-                    'device_ip': device_ip,
                     'platform_id': pid,
                     'force_connect': force,
                     'persist_state': True  # Preserve existing state
@@ -221,7 +220,7 @@ def connect_to_device(device_ip: str, platform_id: int | None = None, force: boo
                 if read_timeout is not None:
                     kwargs['read_timeout'] = read_timeout
                 
-                moku = MultiInstrument(**kwargs)
+                moku = MultiInstrument(device_ip, **kwargs)
                 logger.success(f"Connected to {platform_name} at {device_ip}")
                 return moku
             except Exception as e:
@@ -239,7 +238,6 @@ def connect_to_device(device_ip: str, platform_id: int | None = None, force: boo
         logger.debug(f"Using specified platform: {platform_name} (platform_id={platform_id})")
         try:
             kwargs = {
-                'device_ip': device_ip,
                 'platform_id': platform_id,
                 'force_connect': force,
                 'persist_state': True
@@ -247,7 +245,7 @@ def connect_to_device(device_ip: str, platform_id: int | None = None, force: boo
             if read_timeout is not None:
                 kwargs['read_timeout'] = read_timeout
             
-            moku = MultiInstrument(**kwargs)
+            moku = MultiInstrument(device_ip, **kwargs)
             logger.success(f"Connected to {platform_name} at {device_ip}")
             return moku
         except Exception as e:
