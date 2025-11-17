@@ -213,7 +213,7 @@ Examples:
     logger.info("\n" + "="*60)
     logger.info("TIMING INTROSPECTION - Control10 Operations")
     logger.info("="*60)
-    power_levels = [10.0, 20.0, 30.0]
+    power_levels = [10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0]
     
     logger.info("\n" + "="*60)
     logger.info("Setting power levels sequentially")
@@ -222,7 +222,8 @@ Examples:
     for percent in power_levels:
         register_value = percent_to_register(percent)
         try:
-            set_control_with_timeout(cc, 10, register_value)
+            set_control_with_timeout(cc, 10, register_value, timeout=0.4)
+            time.sleep(0.2)
         except Exception as e:
             error_msg = str(e)
             if "timeout" in error_msg.lower() or "timed out" in error_msg.lower():
