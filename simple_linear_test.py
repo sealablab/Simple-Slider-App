@@ -16,6 +16,7 @@ Examples:
 
 import sys
 import time
+import threading
 from pathlib import Path
 from contextlib import contextmanager
 
@@ -109,26 +110,61 @@ def extra_sanity_checking(moku: MultiInstrument, args, platform_id: int | None,
         logger.error(f"Failed to get CloudCompile instance: {e}")
         sys.exit(1)
 
-def set_control_with_timing(cc: CloudCompile, control_num: int, value: int) -> None:
-    """Set control value with detailed timing breakdown."""
+def set_control_with_timeout(cc: CloudCompile, control_num: int, value: int, timeout: float = 1.0) -> None:
+    """
+    Set control value with timeout and detailed timing breakdown.
+    
+    Args:
+        cc: CloudCompile instance
+        control_num: Control register number
+        value: Value to set
+        timeout: Timeout in seconds (default: 1.0)
+    
+    Raises:
+        TimeoutError: If the operation exceeds the timeout
+        Exception: Any other exception from set_control
+    """
     logger.info(f"\nSetting Control{control_num} to {value} ({register_to_percent(value):.2f}%)")
     
-    # Time the actual set_control call
+    # Use threading to implement timeout
+    result = [None]  # Use list to allow modification from nested function
+    exception = [None]
+    
+    def set_control_thread():
+        """Run set_control in a separate thread."""
+        try:
+            result[0] = cc.set_control(control_num, value)
+        except Exception as e:
+            exception[0] = e
+    
+    # Start the thread
+    thread = threading.Thread(target=set_control_thread)
+    thread.daemon = True
     start = time.perf_counter()
-    try:
-        cc.set_control(control_num, value)
-        elapsed = time.perf_counter() - start
-        logger.info(f"  set_control({control_num}, {value}): {elapsed*1000:.2f} ms")
-    except Exception as e:
-        elapsed = time.perf_counter() - start
-        error_msg = str(e)
+    thread.start()
+    thread.join(timeout=timeout)
+    
+    elapsed = time.perf_counter() - start
+    
+    # Check if thread is still alive (timed out)
+    if thread.is_alive():
+        logger.warning(f"  set_control({control_num}, {value}) TIMED OUT after {elapsed*1000:.2f} ms (timeout: {timeout*1000:.0f} ms)")
+        logger.warning(f"  ⚠️  This may indicate a device/firmware issue. The operation may have succeeded despite the timeout.")
+        raise TimeoutError(f"set_control({control_num}, {value}) timed out after {timeout}s")
+    
+    # Check for exceptions
+    if exception[0] is not None:
+        error_msg = str(exception[0])
         if "timeout" in error_msg.lower() or "timed out" in error_msg.lower():
             logger.warning(f"  set_control({control_num}, {value}) TIMED OUT after {elapsed*1000:.2f} ms")
             logger.warning(f"  ⚠️  This may indicate a device/firmware issue. The operation may have succeeded despite the timeout.")
             logger.warning(f"  Error details: {error_msg}")
         else:
-            logger.error(f"  set_control({control_num}, {value}) FAILED after {elapsed*1000:.2f} ms: {e}")
-        raise
+            logger.error(f"  set_control({control_num}, {value}) FAILED after {elapsed*1000:.2f} ms: {exception[0]}")
+        raise exception[0]
+    
+    # Success
+    logger.info(f"  set_control({control_num}, {value}): {elapsed*1000:.2f} ms")
 
 
 
@@ -186,7 +222,7 @@ Examples:
     for percent in power_levels:
         register_value = percent_to_register(percent)
         try:
-            set_control_with_timing(cc, 10, register_value)
+            set_control_with_timeout(cc, 10, register_value)
         except Exception as e:
             error_msg = str(e)
             if "timeout" in error_msg.lower() or "timed out" in error_msg.lower():
