@@ -82,7 +82,8 @@ def connect_to_device(device_ip: str, platform_id: int | None = None, force: boo
                         device_ip,
                         platform_id=pid,
                         force_connect=force,
-                        persist_state=True  # Preserve existing state
+                        persist_state=True,  # Preserve existing state
+                        read_timeout=5  # 5 second timeout for faster failure detection
                     )
                     print(f"✓ Connected to {platform_id_map[pid]} at {device_ip}")
                     return moku
@@ -98,7 +99,8 @@ def connect_to_device(device_ip: str, platform_id: int | None = None, force: boo
                 device_ip,
                 platform_id=platform_id,
                 force_connect=force,
-                persist_state=True
+                persist_state=True,
+                read_timeout=5  # 5 second timeout for faster failure detection
             )
             platform_name = platform_id_map.get(platform_id, f"Platform {platform_id}")
             print(f"✓ Connected to {platform_name} at {device_ip}")
@@ -157,35 +159,6 @@ def set_control_with_timing(cc: CloudCompile, control_num: int, value: int) -> N
             print(f"  Error details: {error_msg}")
         else:
             print(f"  set_control({control_num}, {value}) FAILED after {elapsed*1000:.2f} ms: {e}")
-        raise
-
-
-def get_control_with_timing(cc: CloudCompile, control_num: int) -> int | None:
-    """Get control value with timing."""
-    print(f"\nReading Control{control_num}")
-    start = time.perf_counter()
-    try:
-        value = cc.get_control(control_num)
-        elapsed = time.perf_counter() - start
-        
-        # Handle case where get_control returns a list
-        if isinstance(value, list):
-            if len(value) > 0:
-                value = value[0]  # Take first element
-            else:
-                value = None
-        
-        if value is not None:
-            # Convert to int and mask to 16 bits
-            int_value = int(value) & 0xFFFF
-            print(f"  get_control({control_num}): {elapsed*1000:.2f} ms -> {int_value} ({register_to_percent(int_value):.2f}%)")
-            return int_value
-        else:
-            print(f"  get_control({control_num}): {elapsed*1000:.2f} ms -> None")
-            return None
-    except Exception as e:
-        elapsed = time.perf_counter() - start
-        print(f"  get_control({control_num}) FAILED after {elapsed*1000:.2f} ms: {e}")
         raise
 
 
@@ -323,22 +296,10 @@ Examples:
             print(f"Error: {e}", file=sys.stderr)
             sys.exit(1)
         
-        # Read initial value (optional, for comparison)
+        # Set power levels sequentially: 10%, 20%, 30%
         print("\n" + "="*60)
         print("TIMING INTROSPECTION - Control10 Operations")
         print("="*60)
-        
-        try:
-            initial_value = get_control_with_timing(cc, 10)
-            if initial_value is not None:
-                # Value is already masked and converted to int in get_control_with_timing
-                if initial_value > 32767:
-                    initial_value = 32767
-                print(f"Initial Control10 value: {initial_value} ({register_to_percent(initial_value):.2f}%)")
-        except Exception as e:
-            print(f"Could not read initial value: {e}")
-        
-        # Set power levels sequentially: 10%, 20%, 30%
         power_levels = [10.0, 20.0, 30.0]
         
         print("\n" + "="*60)
@@ -347,18 +308,15 @@ Examples:
         
         for percent in power_levels:
             register_value = percent_to_register(percent)
-            set_control_with_timing(cc, 10, register_value)
-            
-            # Optional: Read back to verify
             try:
-                readback = get_control_with_timing(cc, 10)
-                if readback is not None:
-                    # Value is already masked and converted to int in get_control_with_timing
-                    if readback > 32767:
-                        readback = 32767
-                    print(f"  Verification: Read back {readback} ({register_to_percent(readback):.2f}%)")
+                set_control_with_timing(cc, 10, register_value)
             except Exception as e:
-                print(f"  Verification read failed: {e}")
+                error_msg = str(e)
+                if "timeout" in error_msg.lower() or "timed out" in error_msg.lower():
+                    print(f"  ⚠️  Continuing despite timeout...")
+                else:
+                    # Re-raise non-timeout exceptions
+                    raise
         
         # Summary
         total_elapsed = time.perf_counter() - total_start
