@@ -158,7 +158,8 @@ def get_cloudcompile_instance(moku: MultiInstrument, slot_num: int, bitstream_pa
         raise RuntimeError(f"Could not access CloudCompile in slot {slot_num}: {e}")
 
 
-def main():
+def handle_arg_parsing():
+    """Parse command line arguments, configure logging, and validate config file."""
     parser = argparse.ArgumentParser(
         description='Upload settings to Moku CloudCompile instrument',
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -260,7 +261,14 @@ Examples:
         platform_id = platform_map[args.platform]
         logger.debug(f"Mapped platform '{args.platform}' to platform_id={platform_id}")
     
+    return args, platform_id, config_path
+
+
+def main():
+    args, platform_id, config_path = handle_arg_parsing()
+    
     # Connect to device
+    logger.info(f"Connecting to {args.device_ip}...")
     try:
         moku = connect_to_device(args.device_ip, platform_id, force=args.force)
     except Exception as e:

@@ -111,7 +111,8 @@ def get_cloudcompile_instance(moku: MultiInstrument, slot_num: int) -> CloudComp
         raise RuntimeError(f"Could not access CloudCompile in slot {slot_num}: {e}")
 
 
-def main():
+def handle_arg_parsing():
+    """Parse command line arguments and configure logging."""
     parser = argparse.ArgumentParser(
         description='Read all control registers from deployed CloudCompile instrument',
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -170,6 +171,12 @@ Examples:
             'moku_delta': 4,
         }
         platform_id = platform_map[args.platform]
+    
+    return args, platform_id
+
+
+def main():
+    args, platform_id = handle_arg_parsing()
     
     # Initialize moku to None to handle cleanup in finally block
     moku = None
