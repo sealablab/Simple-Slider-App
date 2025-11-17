@@ -84,8 +84,11 @@ def add_common_args(parser: argparse.ArgumentParser,
     
     parser.add_argument(
         '--debug',
-        action='store_true',
-        help='Enable debug logging for Moku library'
+        nargs='?',
+        const=True,
+        type=str,
+        metavar='FILE',
+        help='Enable debug logging for Moku library. Optionally specify output file (default: stderr)'
     )
     
     if add_verbose:
@@ -104,16 +107,33 @@ def parse_platform_id(args) -> Optional[int]:
 
 
 def setup_moku_debug_logging(args) -> None:
-    """Enable Moku debug logging if --debug flag is set.
-    
-    Uses the same stream (stderr) as loguru so that Moku debug logs
-    are formatted consistently with the rest of the application output.
     """
-    if args.debug and moku_logging:
-        # Use sys.stderr to match loguru's default sink
-        # This ensures Moku debug logs go through the same stream as loguru
-        moku_logging.enable_debug_logging(stream=sys.stderr)
-        logger.info("Moku debug logging enabled")
+    Enable Moku debug logging if --debug flag is set.
+    
+    Uses the same stream as loguru (stderr by default) or writes to a file
+    if a filename is provided via --debug FILE.
+    """
+    if not args.debug or not moku_logging:
+        return
+    
+    # Determine output stream
+    if args.debug is True:
+        # --debug flag without filename: use stderr (same as loguru)
+        output_stream = sys.stderr
+        logger.info("Moku debug logging enabled (output to stderr)")
+    else:
+        # --debug FILE: open file for writing
+        debug_file = Path(args.debug)
+        try:
+            output_stream = open(debug_file, 'w', encoding='utf-8')
+            logger.info(f"Moku debug logging enabled (output to {debug_file})")
+        except Exception as e:
+            logger.error(f"Failed to open debug log file {debug_file}: {e}")
+            logger.warning("Falling back to stderr for Moku debug logging")
+            output_stream = sys.stderr
+    
+    # Enable Moku debug logging with the determined stream
+    moku_logging.enable_debug_logging(stream=output_stream)
 
 
 def handle_arg_parsing(
