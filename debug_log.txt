@@ -1,0 +1,60 @@
+2025-11-17 16:48:30,565 - moku.moku - INFO - Initializing Moku connection to 192.168.13.147
+2025-11-17 16:48:30,566 - moku.moku - DEBUG - Connection parameters: force_connect=True, ignore_busy=False, persist_state=True
+2025-11-17 16:48:30,566 - moku.session - DEBUG - Session initialized for 192.168.13.147 with timeouts: connect=15s, read=5s
+2025-11-17 16:48:30,566 - moku.moku - DEBUG - Session created, claiming ownership
+2025-11-17 16:48:30,566 - moku.moku - DEBUG - Claiming ownership with params: {'force_connect': True, 'ignore_busy': False, 'persist_state': True}
+2025-11-17 16:48:30,566 - moku.session - DEBUG - POST http://192.168.13.147/api/moku/claim_ownership with params: {'force_connect': True, 'ignore_busy': False, 'persist_state': True}
+2025-11-17 16:48:32,100 - moku.session - DEBUG - POST http://192.168.13.147/api/moku/claim_ownership - Status: 200
+2025-11-17 16:48:32,100 - moku.moku - INFO - Successfully claimed ownership of Moku
+2025-11-17 16:48:32,100 - moku.session - DEBUG - GET http://192.168.13.147/api/moku/describe
+2025-11-17 16:48:32,112 - moku.session - DEBUG - GET http://192.168.13.147/api/moku/describe - Status: 200
+2025-11-17 16:48:32,112 - moku.moku - DEBUG - Device properties: hardware=Moku:Go, mokuOS=4.0.3
+2025-11-17 16:48:32,435 - moku.moku - INFO - Successfully connected to mokugo running MokuOS 4.0.3
+2025-11-17 16:48:32,435 - moku.moku - DEBUG - Checking bitstream 02-000.bar (remote checksum: 6e790c82...)
+2025-11-17 16:48:32,436 - moku.utilities - DEBUG - Looking for version info in /Users/johnycsh/Library/Application Support/Moku/data/versions/4.0.3.json
+2025-11-17 16:48:32,436 - moku.utilities - DEBUG - Bitstream path: /Users/johnycsh/Library/Application Support/Moku/data/instruments/18673/mokugo
+2025-11-17 16:48:32,437 - moku.moku - DEBUG - Bitstream 02-000.bar already up to date
+2025-11-17 16:48:32,437 - moku.moku - DEBUG - Checking bitstream 02-000-00.bar (remote checksum: 7a6a6752...)
+2025-11-17 16:48:32,437 - moku.utilities - DEBUG - Looking for version info in /Users/johnycsh/Library/Application Support/Moku/data/versions/4.0.3.json
+2025-11-17 16:48:32,437 - moku.utilities - DEBUG - Bitstream path: /Users/johnycsh/Library/Application Support/Moku/data/instruments/18673/mokugo
+2025-11-17 16:48:32,437 - moku.moku - DEBUG - Bitstream 02-000-00.bar already up to date
+2025-11-17 16:48:32,437 - moku.moku - DEBUG - Checking bitstream 02-000-01.bar (remote checksum: 48f42e9f...)
+2025-11-17 16:48:32,437 - moku.utilities - DEBUG - Looking for version info in /Users/johnycsh/Library/Application Support/Moku/data/versions/4.0.3.json
+2025-11-17 16:48:32,437 - moku.utilities - DEBUG - Bitstream path: /Users/johnycsh/Library/Application Support/Moku/data/instruments/18673/mokugo
+2025-11-17 16:48:32,437 - moku.moku - DEBUG - Bitstream 02-000-01.bar already up to date
+2025-11-17 16:48:32,437 - moku.session - DEBUG - GET http://192.168.13.147/api/moku/platform/2
+2025-11-17 16:48:32,459 - moku.session - DEBUG - GET http://192.168.13.147/api/moku/platform/2 - Status: 200
+2025-11-17 16:48:32,460 - moku.session - DEBUG - GET http://192.168.13.147/api/mim/get_instruments
+2025-11-17 16:48:32,469 - moku.session - DEBUG - GET http://192.168.13.147/api/mim/get_instruments - Status: 200
+2025-11-17 16:48:32,472 - moku.instruments.CloudCompile - DEBUG - Initializing CloudCompile (ID=255)
+2025-11-17 16:48:32,472 - moku.instruments.CloudCompile - INFO - Uploading bitstream for CloudCompile in slot 2
+2025-11-17 16:48:32,472 - moku.moku - DEBUG - Checking bitstream 02-255-01.bar (remote checksum: 58b5924b...)
+2025-11-17 16:48:32,473 - moku.moku - DEBUG - Bitstream 02-255-01.bar already up to date
+2025-11-17 16:48:32,473 - moku.instruments.CloudCompile - DEBUG - Deploying instrument to slot 2
+2025-11-17 16:48:32,473 - moku.session - DEBUG - GET http://192.168.13.147/api/slot2/cloudcompile
+2025-11-17 16:48:33,022 - moku.session - DEBUG - GET http://192.168.13.147/api/slot2/cloudcompile - Status: 200
+2025-11-17 16:48:33,022 - moku.instruments.CloudCompile - INFO - CloudCompile successfully deployed to slot 2
+2025-11-17 16:48:33,024 - moku.session - DEBUG - POST http://192.168.13.147/api/slot2/cloudcompile/set_control with params: {'strict': True, 'idx': 10, 'value': 3276}
+2025-11-17 16:48:33,417 - moku.session - DEBUG - POST http://192.168.13.147/api/slot2/cloudcompile/set_control - Status: 200
+2025-11-17 16:48:33,621 - moku.session - DEBUG - POST http://192.168.13.147/api/slot2/cloudcompile/set_control with params: {'strict': True, 'idx': 10, 'value': 6553}
+2025-11-17 16:48:33,637 - moku.session - DEBUG - POST http://192.168.13.147/api/slot2/cloudcompile/set_control - Status: 200
+2025-11-17 16:48:33,842 - moku.session - DEBUG - POST http://192.168.13.147/api/slot2/cloudcompile/set_control with params: {'strict': True, 'idx': 10, 'value': 9830}
+2025-11-17 16:48:33,862 - moku.session - DEBUG - POST http://192.168.13.147/api/slot2/cloudcompile/set_control - Status: 200
+2025-11-17 16:48:34,068 - moku.session - DEBUG - POST http://192.168.13.147/api/slot2/cloudcompile/set_control with params: {'strict': True, 'idx': 10, 'value': 13106}
+2025-11-17 16:48:34,204 - moku.session - DEBUG - POST http://192.168.13.147/api/slot2/cloudcompile/set_control - Status: 200
+2025-11-17 16:48:34,406 - moku.session - DEBUG - POST http://192.168.13.147/api/slot2/cloudcompile/set_control with params: {'strict': True, 'idx': 10, 'value': 16383}
+2025-11-17 16:48:34,424 - moku.session - DEBUG - POST http://192.168.13.147/api/slot2/cloudcompile/set_control - Status: 200
+2025-11-17 16:48:34,631 - moku.session - DEBUG - POST http://192.168.13.147/api/slot2/cloudcompile/set_control with params: {'strict': True, 'idx': 10, 'value': 19660}
+2025-11-17 16:48:34,659 - moku.session - DEBUG - POST http://192.168.13.147/api/slot2/cloudcompile/set_control - Status: 200
+2025-11-17 16:48:34,866 - moku.session - DEBUG - POST http://192.168.13.147/api/slot2/cloudcompile/set_control with params: {'strict': True, 'idx': 10, 'value': 22936}
+2025-11-17 16:48:34,883 - moku.session - DEBUG - POST http://192.168.13.147/api/slot2/cloudcompile/set_control - Status: 200
+2025-11-17 16:48:35,092 - moku.session - DEBUG - POST http://192.168.13.147/api/slot2/cloudcompile/set_control with params: {'strict': True, 'idx': 10, 'value': 26213}
+2025-11-17 16:48:35,262 - moku.session - DEBUG - POST http://192.168.13.147/api/slot2/cloudcompile/set_control - Status: 200
+2025-11-17 16:48:35,466 - moku.session - DEBUG - POST http://192.168.13.147/api/slot2/cloudcompile/set_control with params: {'strict': True, 'idx': 10, 'value': 29490}
+2025-11-17 16:48:35,485 - moku.session - DEBUG - POST http://192.168.13.147/api/slot2/cloudcompile/set_control - Status: 200
+2025-11-17 16:48:35,689 - moku.session - DEBUG - POST http://192.168.13.147/api/slot2/cloudcompile/set_control with params: {'strict': True, 'idx': 10, 'value': 32767}
+2025-11-17 16:48:35,724 - moku.session - DEBUG - POST http://192.168.13.147/api/slot2/cloudcompile/set_control - Status: 200
+2025-11-17 16:48:35,932 - moku.moku - DEBUG - Relinquishing ownership
+2025-11-17 16:48:35,932 - moku.session - DEBUG - POST http://192.168.13.147/api/moku/relinquish_ownership with params: None
+2025-11-17 16:48:35,959 - moku.session - DEBUG - POST http://192.168.13.147/api/moku/relinquish_ownership - Status: 200
+2025-11-17 16:48:35,959 - moku.moku - INFO - Successfully relinquished ownership

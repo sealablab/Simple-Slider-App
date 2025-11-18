@@ -1,0 +1,192 @@
+{
+  "main": {
+    "id": "5eb3f97bf4d9e1e1",
+    "type": "split",
+    "children": [
+      {
+        "id": "e1b54d52eaf9b53c",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "51b823796219d3a1",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "moku/ARCHITECTURE.md",
+                "mode": "source",
+                "source": true
+              },
+              "icon": "lucide-file",
+              "title": "ARCHITECTURE"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "29b020dd4e427ac3",
+    "type": "split",
+    "children": [
+      {
+        "id": "3c543d61cbd94cbe",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "8300d7b8b4519be3",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "4acc0d772734cbca",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "a71a99a974c89f3f",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "d393c7dc37001e04",
+    "type": "split",
+    "children": [
+      {
+        "id": "3aa934dc68a6c9ae",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "190cbcfbd15159d0",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "moku/ARCHITECTURE.md",
+                "collapseAll": true,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for ARCHITECTURE"
+            }
+          },
+          {
+            "id": "50922d715559e07d",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "moku/ARCHITECTURE.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from ARCHITECTURE"
+            }
+          },
+          {
+            "id": "30e2b0ed0292e96d",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "684a7e37e3eb479d",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "moku/ARCHITECTURE.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of ARCHITECTURE"
+            }
+          }
+        ],
+        "currentTab": 3
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false
+    }
+  },
+  "active": "51b823796219d3a1",
+  "lastOpenFiles": [
+    "moku_grab.py",
+    "a",
+    "wip_scripts/moku_grab.py~",
+    "wip_scripts/moku_grab.py",
+    "wip_scripts",
+    "moku/README.md",
+    "moku/ARCHITECTURE.md",
+    "moku/instruments/cloudcompile.md",
+    "moku/instruments/mim.md",
+    "moku/session.md",
+    "moku/instruments/_digitalfilterbox.md.tmp.99205.1763432222774",
+    "P2.md",
+    "Untitled.md",
+    "jc_prompts/P1.md",
+    "jc_prompts",
+    "moku/instruments/_waveformgenerator.md.tmp.99205.1763431374308",
+    "moku/instruments/_pidcontroller.md.tmp.99205.1763431355468",
+    "moku/version.md.tmp.99205.1763431296037"
+  ]
+}
