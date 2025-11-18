@@ -174,11 +174,11 @@ begin
     -- Convert YAML time units to clock cycles using platform-aware functions
     -- from basic_app_time_pkg
     ------------------------------------------------------------------------
-	-- @JC @CLAUDE: dont forget to update these widths and update the python code to be responsible for conversions
-    trigger_wait_timeout_cycles    <= trigger_wait_timeout;
-    trig_out_duration_cycles       <= trig_out_duration;
-    intensity_duration_cycles      <= intensity_duration;
-    cooldown_interval_cycles       <= cooldown_interval;
+	-- @JC @CLAUDE: Width conversions with zero-extension to 32 bits
+    trigger_wait_timeout_cycles    <= resize(trigger_wait_timeout, 32);
+    trig_out_duration_cycles       <= resize(trig_out_duration, 32);
+    intensity_duration_cycles      <= resize(intensity_duration, 32);
+    cooldown_interval_cycles       <= resize(cooldown_interval, 32);
     monitor_window_start_cycles    <= monitor_window_start;
     monitor_window_duration_cycles <= monitor_window_duration;
     --trigger_wait_timeout_cycles    <= s_to_cycles(trigger_wait_timeout, CLK_FREQ_HZ);
