@@ -59,13 +59,14 @@ def get_instrument_class(instrument_name):
     raise ValueError(f"Unknown instrument: {instrument_name}")
 
 
-def capture_moku_state(mim: MultiInstrument, output_dir: Path):
+def capture_moku_state(mim: MultiInstrument, output_dir: Path, bitstream_path=None):
     """
     Capture complete state of Moku device in multi-instrument mode.
 
     Args:
         mim: Connected MultiInstrument instance
         output_dir: Directory to save configuration files
+        bitstream_path: Optional path to bitstream file for CloudCompile
 
     Returns:
         Dictionary with capture results
@@ -106,7 +107,13 @@ def capture_moku_state(mim: MultiInstrument, output_dir: Path):
             # Get instrument class and create reference
             with time_operation(f"  Getting {instrument_name} instance"):
                 InstrumentClass = get_instrument_class(instrument_name)
-                instrument = InstrumentClass.for_slot(slot=slot_num, multi_instrument=mim)
+                # CloudCompile requires bitstream path during instantiation
+                if instrument_name == "CloudCompile":
+                    if not bitstream_path:
+                        raise ValueError("CloudCompile requires --bitstream argument")
+                    instrument = InstrumentClass.for_slot(slot=slot_num, multi_instrument=mim, bitstream=bitstream_path)
+                else:
+                    instrument = InstrumentClass.for_slot(slot=slot_num, multi_instrument=mim)
 
             # Save settings
             config_path = output_path / f"slot{slot_num}_{instrument_name}.mokuconf"
@@ -134,10 +141,10 @@ def capture_moku_state(mim: MultiInstrument, output_dir: Path):
     with time_operation("Collecting device metadata"):
         metadata = {
             "timestamp": datetime.now().isoformat(),
-            "device_ip": mim._ip,
+            "device_ip": getattr(mim, '_ip', getattr(mim, 'ip', 'unknown')),
             "serial_number": mim.serial_number(),
             "mokuos_version": mim.mokuos_version(),
-            "platform_id": mim._platform_id,
+            "platform_id": getattr(mim, '_platform_id', getattr(mim, 'platform_id', None)),
             "slots": [
                 {"slot": i+1, "instrument": name}
                 for i, name in enumerate(instrument_list)
@@ -190,6 +197,12 @@ Examples:
         metavar='FILE',
         help='Enable debug logging for Moku library. Optionally specify output file (default: stderr)'
     )
+    parser.add_argument(
+        '--bitstream',
+        type=str,
+        metavar='PATH',
+        help='Path to bitstream file (required for CloudCompile instrument)'
+    )
 
     args = parser.parse_args()
 
@@ -220,7 +233,7 @@ Examples:
         logger.info("CAPTURING MOKU STATE")
         logger.info("="*60)
 
-        results = capture_moku_state(mim, output_path)
+        results = capture_moku_state(mim, output_path, bitstream_path=args.bitstream)
 
         # Summary
         total_elapsed = time.perf_counter() - total_start
