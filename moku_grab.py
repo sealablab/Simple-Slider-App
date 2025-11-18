@@ -10,7 +10,8 @@ Usage:
 Examples:
     python moku_grab.py 192.168.1.100
     python moku_grab.py 192.168.1.100 --output ./my_backup
-    python moku_grab.py 192.168.1.100 --platform moku_pro --force
+    python moku_grab.py 192.168.1.100 --platform 4 --debug
+    python moku_grab.py 192.168.1.100 --debug debug_log.txt
 """
 
 import sys
@@ -38,7 +39,7 @@ except ImportError:
     sys.exit(1)
 
 # Import shared CLI utilities
-from moku_cli_common import time_operation
+from moku_cli_common import time_operation, setup_moku_debug_logging
 
 # Configure loguru with nice formatting
 logger.remove()  # Remove default handler
@@ -167,8 +168,11 @@ Examples:
   # Specify platform and output directory
   python moku_grab.py 192.168.1.100 --platform 4 --output ./my_backup
 
-  # Custom output directory
-  python moku_grab.py 192.168.1.100 --output ./device_configs
+  # Enable debug logging to stderr
+  python moku_grab.py 192.168.1.100 --debug
+
+  # Enable debug logging to file
+  python moku_grab.py 192.168.1.100 --debug debug_log.txt
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -178,6 +182,14 @@ Examples:
                         help='Platform ID (2 or 4 for number of slots, default: 4)')
     parser.add_argument('--output', type=str,
                         help='Output directory (default: ./moku_backup_TIMESTAMP)')
+    parser.add_argument(
+        '--debug',
+        nargs='?',
+        const=True,
+        type=str,
+        metavar='FILE',
+        help='Enable debug logging for Moku library. Optionally specify output file (default: stderr)'
+    )
 
     args = parser.parse_args()
 
@@ -186,6 +198,9 @@ Examples:
         args.output = f"./moku_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
     output_path = Path(args.output)
+
+    # Enable Moku debug logging if requested
+    setup_moku_debug_logging(args)
 
     # Overall timing
     total_start = time.perf_counter()
@@ -197,7 +212,7 @@ Examples:
         # Connect to device (special case - uses direct MultiInstrument)
         logger.info(f"Connecting to Moku at {args.device_ip}...")
         with time_operation("Device connection"):
-            mim = MultiInstrument(ip=args.device_ip, platform_id=args.platform)
+            mim = MultiInstrument(ip=args.device_ip, platform_id=args.platform, force_connect=True, persist_state=True, ignore_busy=True)
         logger.success("Connected")
 
         # Capture state
@@ -218,9 +233,7 @@ Examples:
         logger.success(f"Complete state captured successfully")
 
     except Exception as e:
-        logger.error(f"Failed to capture state: {e}")
-        import traceback
-        logger.debug(traceback.format_exc())
+        logger.exception(f"Failed to capture state: {e}")
         sys.exit(1)
 
     finally:
