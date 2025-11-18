@@ -1,0 +1,17 @@
+{
+  "timestamp": "2025-11-17T20:31:10.599569",
+  "device_ip": "unknown",
+  "serial_number": "007985",
+  "mokuos_version": "4.0.3",
+  "platform_id": 2,
+  "slots": [
+    {
+      "slot": 1,
+      "instrument": "Oscilloscope"
+    },
+    {
+      "slot": 2,
+      "instrument": "CloudCompile"
+    }
+  ]
+}

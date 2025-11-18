@@ -1,0 +1,16 @@
+{
+  "configurationVersion": 0,
+  "hardwareVersion": [
+    4,
+    0,
+    0
+  ],
+  "layout": {
+    "aIn": 2,
+    "aOut": 2,
+    "buses": 1,
+    "dioPorts": 1,
+    "slots": 2
+  },
+  "platformID": 2
+}

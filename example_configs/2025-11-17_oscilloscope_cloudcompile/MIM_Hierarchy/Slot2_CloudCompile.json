@@ -1,0 +1,146 @@
+{
+  "name": [
+    "Instrument state",
+    "Cloud Compile"
+  ],
+  "node_serialization_version": 1,
+  "subnodes": [
+    {
+      "name": [
+        "Register"
+      ],
+      "uid": "c979002f-7910-4919-b791-cc866447e53f_0",
+      "value": "AAAAAOA=",
+      "value_string": "3,758,096,384"
+    },
+    {
+      "name": [
+        "Register"
+      ],
+      "uid": "c979002f-7910-4919-b791-cc866447e53f_1",
+      "value": "AAUAAAA=",
+      "value_string": "5"
+    },
+    {
+      "name": [
+        "Register"
+      ],
+      "uid": "c979002f-7910-4919-b791-cc866447e53f_2",
+      "value": "AOQMAAA=",
+      "value_string": "3,300"
+    },
+    {
+      "name": [
+        "Register"
+      ],
+      "uid": "c979002f-7910-4919-b791-cc866447e53f_3",
+      "value": "AOgDAAA=",
+      "value_string": "1,000"
+    },
+    {
+      "name": [
+        "Register"
+      ],
+      "uid": "c979002f-7910-4919-b791-cc866447e53f_4",
+      "value": "AMQJAAA=",
+      "value_string": "2,500"
+    },
+    {
+      "name": [
+        "Register"
+      ],
+      "uid": "c979002f-7910-4919-b791-cc866447e53f_5",
+      "value": "ANAHAAA=",
+      "value_string": "2,000"
+    },
+    {
+      "name": [
+        "Register"
+      ],
+      "uid": "c979002f-7910-4919-b791-cc866447e53f_6",
+      "value": "AAUAAAA=",
+      "value_string": "5"
+    },
+    {
+      "name": [
+        "Register"
+      ],
+      "uid": "c979002f-7910-4919-b791-cc866447e53f_7",
+      "value": "AKCGAQA=",
+      "value_string": "100,000"
+    },
+    {
+      "name": [
+        "Register"
+      ],
+      "uid": "c979002f-7910-4919-b791-cc866447e53f_8",
+      "value": "AAMAAAA=",
+      "value_string": "3"
+    },
+    {
+      "name": [
+        "Register"
+      ],
+      "uid": "c979002f-7910-4919-b791-cc866447e53f_9",
+      "value": "ADj///8=",
+      "value_string": "4,294,967,096"
+    },
+    {
+      "name": [
+        "Register"
+      ],
+      "uid": "c979002f-7910-4919-b791-cc866447e53f_10",
+      "value": "AP9/AAA=",
+      "value_string": "32,767"
+    },
+    {
+      "name": [
+        "Register"
+      ],
+      "uid": "c979002f-7910-4919-b791-cc866447e53f_11",
+      "value": "AIgTAAA=",
+      "value_string": "5,000"
+    },
+    {
+      "name": [
+        "Register"
+      ],
+      "uid": "c979002f-7910-4919-b791-cc866447e53f_12",
+      "value": "AAAAAAA=",
+      "value_string": "0"
+    },
+    {
+      "name": [
+        "Register"
+      ],
+      "uid": "c979002f-7910-4919-b791-cc866447e53f_13",
+      "value": "AAAAAAA=",
+      "value_string": "0"
+    },
+    {
+      "name": [
+        "Register"
+      ],
+      "uid": "c979002f-7910-4919-b791-cc866447e53f_14",
+      "value": "AAAAAAA=",
+      "value_string": "0"
+    },
+    {
+      "name": [
+        "Register"
+      ],
+      "uid": "c979002f-7910-4919-b791-cc866447e53f_15",
+      "value": "AAAAAAA=",
+      "value_string": "0"
+    },
+    {
+      "name": [
+        "UI",
+        "Auto commit"
+      ],
+      "uid": "2b997bef-48b5-4f3d-9396-fd20a353c5c6_0",
+      "value": "AAE="
+    }
+  ],
+  "uid": "c413011e-d95e-4d8b-95e9-6c230698c3f7"
+}
