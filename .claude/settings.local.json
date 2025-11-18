@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv pip show:*)",
+      "Bash(tree:*)",
+      "Bash(mkdir:*)",
+      "Bash(touch:*)",
+      "Bash(test:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
