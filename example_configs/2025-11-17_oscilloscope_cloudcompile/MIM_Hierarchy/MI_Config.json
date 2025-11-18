@@ -1,0 +1,124 @@
+{
+  "name": [
+    "Multi-Instrument Mode configuration"
+  ],
+  "node_serialization_version": 1,
+  "subnodes": [
+    {
+      "name": [
+        "Platform"
+      ],
+      "uid": "74247ba9-29d0-43a8-982b-ba68f54381bf",
+      "value": "AAACAAAAAAEAAAAABAAAAAADAAAAAAQAAAAAAgAAAAACAAAAAAIAAAAAAAAAAAA="
+    },
+    {
+      "name": [
+        "Layout"
+      ],
+      "uid": "c32325f6-94af-4330-9b8f-bbae1b8fc9b0",
+      "value": "AAACAAAAAAIAAAAAAgAAAAABAAAAAAEAAAA="
+    },
+    {
+      "name": [
+        "Instruments"
+      ],
+      "uid": "c419b1fc-d063-4fed-a9de-b2170738e699",
+      "value": "AAACAAAAAAEA/w=="
+    },
+    {
+      "name": [
+        "Input signals"
+      ],
+      "uid": "1d4c08a6-ca91-4993-ab90-29664aeb87bb",
+      "value": "AAAEAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAABAAAAAGEAAAEAAAAAAAAAAABgAAABAAAAAAEAAAAAMQ=="
+    },
+    {
+      "name": [
+        "Output signals"
+      ],
+      "uid": "6e150559-7df8-4c29-871c-b36d313058b0",
+      "value": "AAACAAAAAEAAAAEAAAAAAAAAAABBAAABAAAAAAEAAAA="
+    },
+    {
+      "name": [
+        "AFE 1",
+        "Input coupling"
+      ],
+      "uid": "6d0cad2c-367a-4d89-8df0-e6756b9cde2a_0",
+      "value": "AAEAAAA=",
+      "value_string": "DC"
+    },
+    {
+      "name": [
+        "AFE 1",
+        "Input impedance"
+      ],
+      "uid": "b8b8a7fc-cd35-4349-b91e-a0a35815a81a_0",
+      "value": "AAAAAAA=",
+      "value_string": "1 M\u03a9"
+    },
+    {
+      "name": [
+        "AFE 1",
+        "Input range"
+      ],
+      "uid": "5d297010-6a6d-42ac-8c3e-d644072cfecc_0",
+      "value": "ABAnAAA=",
+      "value_string": "10 Vpp"
+    },
+    {
+      "name": [
+        "AFE 2",
+        "Input coupling"
+      ],
+      "uid": "6d0cad2c-367a-4d89-8df0-e6756b9cde2a_1",
+      "value": "AAEAAAA=",
+      "value_string": "DC"
+    },
+    {
+      "name": [
+        "AFE 2",
+        "Input impedance"
+      ],
+      "uid": "b8b8a7fc-cd35-4349-b91e-a0a35815a81a_1",
+      "value": "AAAAAAA=",
+      "value_string": "1 M\u03a9"
+    },
+    {
+      "name": [
+        "AFE 2",
+        "Input range"
+      ],
+      "uid": "5d297010-6a6d-42ac-8c3e-d644072cfecc_1",
+      "value": "ABAnAAA=",
+      "value_string": "10 Vpp"
+    },
+    {
+      "name": [
+        "AFE 1",
+        "Output range"
+      ],
+      "uid": "e64d2d27-2457-49be-a2f7-095c36e590d9_0",
+      "value": "AIgTAAA=",
+      "value_string": "10 Vpp"
+    },
+    {
+      "name": [
+        "AFE 2",
+        "Output range"
+      ],
+      "uid": "e64d2d27-2457-49be-a2f7-095c36e590d9_1",
+      "value": "AIgTAAA=",
+      "value_string": "10 Vpp"
+    },
+    {
+      "name": [
+        "DIO directions"
+      ],
+      "uid": "f8532ca6-fd01-4ba3-9484-fd0221ae1e58_0",
+      "value": "AAAA",
+      "value_string": "0"
+    }
+  ],
+  "uid": "2ce40ba4-3a07-4023-a110-ac7f5913f848"
+}
