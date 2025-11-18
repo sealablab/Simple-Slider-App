@@ -103,12 +103,70 @@ def ns_to_cycles(
     return s_to_cycles(seconds, clk_freq_hz, round_direction)
 
 
+# Reverse conversions: clock cycles to time units
+
+def cycles_to_s(
+    cycles: int,
+    clk_freq_hz: int = DEFAULT_CLK_FREQ_HZ
+) -> float:
+    """
+    Convert clock cycles to seconds.
+
+    Args:
+        cycles: Number of clock cycles
+        clk_freq_hz: Clock frequency in Hz (default: 125 MHz for Moku Go)
+
+    Returns:
+        Time in seconds as float
+    """
+    return cycles / clk_freq_hz
+
+
+def cycles_to_us(
+    cycles: int,
+    clk_freq_hz: int = DEFAULT_CLK_FREQ_HZ
+) -> float:
+    """
+    Convert clock cycles to microseconds.
+
+    Args:
+        cycles: Number of clock cycles
+        clk_freq_hz: Clock frequency in Hz (default: 125 MHz for Moku Go)
+
+    Returns:
+        Time in microseconds as float
+    """
+    return (cycles / clk_freq_hz) * 1_000_000
+
+
+def cycles_to_ns(
+    cycles: int,
+    clk_freq_hz: int = DEFAULT_CLK_FREQ_HZ
+) -> float:
+    """
+    Convert clock cycles to nanoseconds.
+
+    Args:
+        cycles: Number of clock cycles
+        clk_freq_hz: Clock frequency in Hz (default: 125 MHz for Moku Go)
+
+    Returns:
+        Time in nanoseconds as float
+    """
+    return (cycles / clk_freq_hz) * 1_000_000_000
+
+
 if __name__ == "__main__":
     # Example usage
     print(f"Default clock frequency: {DEFAULT_CLK_FREQ_HZ / 1e6} MHz")
-    print(f"\nExample conversions:")
+    print(f"\nForward conversions (time -> cycles):")
     print(f"  1 second = {s_to_cycles(1)} cycles")
     print(f"  100 microseconds = {us_to_cycles(100)} cycles")
     print(f"  1000 nanoseconds = {ns_to_cycles(1000)} cycles")
     print(f"  1.5 nanoseconds (round down) = {ns_to_cycles(1.5, round_direction='down')} cycles")
     print(f"  1.5 nanoseconds (round up) = {ns_to_cycles(1.5, round_direction='up')} cycles")
+
+    print(f"\nReverse conversions (cycles -> time):")
+    print(f"  125000000 cycles = {cycles_to_s(125000000)} seconds")
+    print(f"  12500 cycles = {cycles_to_us(12500)} microseconds")
+    print(f"  125 cycles = {cycles_to_ns(125)} nanoseconds")
