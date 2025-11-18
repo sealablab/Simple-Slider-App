@@ -56,28 +56,28 @@ entity DPD_main is
         -- Arming and lifecycle
         arm_enable           : in std_logic;               -- Arm the FSM (IDLE → ARMED)
         ext_trigger_in       : in std_logic;               -- External trigger (ARMED → FIRING)
-        trigger_wait_timeout : in unsigned(15 downto 0);  -- Max wait in ARMED (s)
+        trigger_wait_timeout : in unsigned(31 downto 0);  -- Max wait in ARMED (clock cycles)
         auto_rearm_enable    : in std_logic;               -- Re-arm after cooldown
         fault_clear          : in std_logic;               -- Clear fault state
 
         -- Output controls (trigger path)
         trig_out_voltage     : in signed(15 downto 0);    -- Trigger voltage (mV)
-        trig_out_duration    : in unsigned(15 downto 0);  -- Trigger pulse width (ns)
+        trig_out_duration    : in unsigned(31 downto 0);  -- Trigger pulse width (clock cycles)
 
         -- Output controls (intensity path)
         intensity_voltage    : in signed(15 downto 0);    -- Intensity voltage (mV)
-        intensity_duration   : in unsigned(15 downto 0);  -- Intensity pulse width (ns)
+        intensity_duration   : in unsigned(31 downto 0);  -- Intensity pulse width (clock cycles)
 
         -- Timing controls
-        cooldown_interval    : in unsigned(23 downto 0);  -- Cooldown period (μs)
+        cooldown_interval    : in unsigned(31 downto 0);  -- Cooldown period (clock cycles)
 
         -- Monitor/feedback
         probe_monitor_feedback    : in signed(15 downto 0);  -- ADC feedback (mV)
         monitor_enable            : in std_logic;             -- Enable comparator
         monitor_threshold_voltage : in signed(15 downto 0);  -- Threshold (mV)
         monitor_expect_negative   : in std_logic;             -- Polarity select
-        monitor_window_start      : in unsigned(31 downto 0); -- Window delay (ns)
-        monitor_window_duration   : in unsigned(31 downto 0); -- Window length (ns)
+        monitor_window_start      : in unsigned(31 downto 0); -- Window delay (clock cycles)
+        monitor_window_duration   : in unsigned(31 downto 0); -- Window length (clock cycles)
 
         ------------------------------------------------------------------------
         -- BRAM Interface (Reserved for future use)
@@ -117,14 +117,9 @@ architecture rtl of DPD_main is
     signal next_state : std_logic_vector(5 downto 0);
 
     ----------------------------------------------------------------------------
-    -- Time Conversion Signals (YAML units → clock cycles @ 125 MHz)
+    -- Note: All timing parameters now arrive as clock cycles from Python client
+    -- No conversion needed - these signals map directly to input ports
     ----------------------------------------------------------------------------
-    signal trigger_wait_timeout_cycles   : unsigned(31 downto 0);  -- s → cycles
-    signal trig_out_duration_cycles      : unsigned(31 downto 0);  -- ns → cycles
-    signal intensity_duration_cycles     : unsigned(31 downto 0);  -- ns → cycles
-    signal cooldown_interval_cycles      : unsigned(31 downto 0);  -- μs → cycles
-    signal monitor_window_start_cycles   : unsigned(31 downto 0);  -- ns → cycles
-    signal monitor_window_duration_cycles: unsigned(31 downto 0);  -- ns → cycles
 
     ----------------------------------------------------------------------------
     -- Timing Counters
@@ -169,24 +164,9 @@ architecture rtl of DPD_main is
 begin
 
     ------------------------------------------------------------------------
-    -- Time to Cycles Conversions
-    --
-    -- Convert YAML time units to clock cycles using platform-aware functions
-    -- from basic_app_time_pkg
+    -- Note: Time conversions now handled by Python client (clk_utils.py)
+    -- All timing parameters arrive pre-converted to clock cycles
     ------------------------------------------------------------------------
-	-- @JC @CLAUDE: Width conversions with zero-extension to 32 bits
-    trigger_wait_timeout_cycles    <= resize(trigger_wait_timeout, 32);
-    trig_out_duration_cycles       <= resize(trig_out_duration, 32);
-    intensity_duration_cycles      <= resize(intensity_duration, 32);
-    cooldown_interval_cycles       <= resize(cooldown_interval, 32);
-    monitor_window_start_cycles    <= monitor_window_start;
-    monitor_window_duration_cycles <= monitor_window_duration;
-    --trigger_wait_timeout_cycles    <= s_to_cycles(trigger_wait_timeout, CLK_FREQ_HZ);
-    --trig_out_duration_cycles       <= ns_to_cycles(trig_out_duration, CLK_FREQ_HZ);
-    --intensity_duration_cycles      <= ns_to_cycles(intensity_duration, CLK_FREQ_HZ);
-    --cooldown_interval_cycles       <= us_to_cycles(cooldown_interval, CLK_FREQ_HZ);
-    --monitor_window_start_cycles    <= ns_to_cycles_32(monitor_window_start, CLK_FREQ_HZ);
-    --monitor_window_duration_cycles <= ns_to_cycles_32(monitor_window_duration, CLK_FREQ_HZ);
 
     ------------------------------------------------------------------------
     -- Edge Detector for fault_clear
@@ -342,28 +322,28 @@ begin
 
                     when STATE_ARMED =>
                         -- Increment timeout counter
-                        if armed_timer < trigger_wait_timeout_cycles then
+                        if armed_timer < trigger_wait_timeout then
                             armed_timer <= armed_timer + 1;
                         end if;
 
                     when STATE_FIRING =>
                         -- Trigger output pulse timing
-                        if trig_out_timer < trig_out_duration_cycles then
+                        if trig_out_timer < trig_out_duration then
                             trig_out_timer <= trig_out_timer + 1;
                         end if;
 
                         -- Intensity output pulse timing
-                        if intensity_timer < intensity_duration_cycles then
+                        if intensity_timer < intensity_duration then
                             intensity_timer <= intensity_timer + 1;
                         end if;
 
                         -- Monitor window timing
                         if monitor_enable = '1' then
-                            if monitor_start_timer < monitor_window_start_cycles then
+                            if monitor_start_timer < monitor_window_start then
                                 -- Delay before window opens
                                 monitor_start_timer <= monitor_start_timer + 1;
                                 monitor_window_open <= '0';
-                            elsif monitor_duration_timer < monitor_window_duration_cycles then
+                            elsif monitor_duration_timer < monitor_window_duration then
                                 -- Window is open
                                 monitor_duration_timer <= monitor_duration_timer + 1;
                                 monitor_window_open <= '1';
@@ -380,7 +360,7 @@ begin
 
                     when STATE_COOLDOWN =>
                         -- Increment cooldown counter
-                        if cooldown_timer < cooldown_interval_cycles then
+                        if cooldown_timer < cooldown_interval then
                             cooldown_timer <= cooldown_timer + 1;
                         end if;
 
@@ -446,23 +426,23 @@ begin
     --
     -- Derive control flags from counter values
     ------------------------------------------------------------------------
-    timeout_occurred  <= '1' when (armed_timer >= trigger_wait_timeout_cycles) else '0';
-    firing_complete   <= '1' when (trig_out_timer >= trig_out_duration_cycles
-                                   and intensity_timer >= intensity_duration_cycles
+    timeout_occurred  <= '1' when (armed_timer >= trigger_wait_timeout) else '0';
+    firing_complete   <= '1' when (trig_out_timer >= trig_out_duration
+                                   and intensity_timer >= intensity_duration
                                    and state = STATE_FIRING) else '0';
-    cooldown_complete <= '1' when (cooldown_timer >= cooldown_interval_cycles) else '0';
+    cooldown_complete <= '1' when (cooldown_timer >= cooldown_interval) else '0';
 
     ------------------------------------------------------------------------
     -- Fault Detection Logic
     --
     -- Detect safety violations
     ------------------------------------------------------------------------
-    FAULT_DETECTION: process(state, armed_timer, trigger_wait_timeout_cycles)
+    FAULT_DETECTION: process(state, armed_timer, trigger_wait_timeout)
     begin
         fault_detected <= '0';  -- Default: no fault
 
         -- Detect timeout in ARMED state
-        if state = STATE_ARMED and armed_timer > trigger_wait_timeout_cycles then
+        if state = STATE_ARMED and armed_timer > trigger_wait_timeout then
             fault_detected <= '1';
         end if;
 

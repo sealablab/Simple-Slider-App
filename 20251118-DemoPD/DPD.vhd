@@ -16,7 +16,7 @@
 --
 -- Register Mapping:
 --   CR0[31:29] → FORGE control bits (3-bit handshaking)
---   CR1-CR11   → Application registers (11 registers)
+--   CR1-CR10   → Application registers (10 registers)
 --
 -- Architecture:
 --   Layer 1: (DPD.vhd - This file) ('TOP')
@@ -84,7 +84,7 @@ begin
             clk_enable   => clk_enable,
             loader_done  => loader_done,
 
-            -- Application Registers (CR1-CR11)
+            -- Application Registers (CR1-CR10)
             app_reg_1  => Control1,
             app_reg_2  => Control2,
             app_reg_3  => Control3,
@@ -95,7 +95,6 @@ begin
             app_reg_8  => Control8,
             app_reg_9  => Control9,
             app_reg_10 => Control10,
-            app_reg_11 => Control11,
 
             -- BRAM Interface (reserved for future use)
             bram_addr => (others => '0'),
@@ -133,19 +132,23 @@ end architecture bpd_forge;
 --
 --    e) Module operates: global_enable = forge_ready AND user_enable AND clk_enable AND loader_done
 --
--- 2. Application Register Mapping (CR1-CR11):
+-- 2. Application Register Mapping (CR1-CR10):
 --
 --    CR1[3:0]   : Lifecycle control (arm_enable, ext_trigger_in, auto_rearm, fault_clear)
 --    CR2[15:0]  : Trigger output voltage (mV)
---    CR3[15:0]  : Trigger pulse duration (ns)
---    CR4[15:0]  : Intensity output voltage (mV)
---    CR5[15:0]  : Intensity pulse duration (ns)
---    CR6[15:0]  : Trigger wait timeout (s)
---    CR7[23:0]  : Cooldown interval (μs)
---    CR8[1:0]   : Monitor control (enable, expect_negative)
---    CR9[15:0]  : Monitor threshold voltage (mV)
---    CR10[31:0] : Monitor window start delay (ns)
---    CR11[31:0] : Monitor window duration (ns)
+--    CR3[15:0]  : Intensity output voltage (mV)
+--    CR4[31:0]  : Trigger pulse duration (clock cycles)
+--    CR5[31:0]  : Intensity pulse duration (clock cycles)
+--    CR6[31:0]  : Trigger wait timeout (clock cycles)
+--    CR7[31:0]  : Cooldown interval (clock cycles)
+--    CR8[31:0]  : Monitor control and threshold
+--                 CR8[1:0]   - Monitor control (enable, expect_negative)
+--                 CR8[15:2]  - Reserved
+--                 CR8[31:16] - Monitor threshold voltage (mV, signed)
+--    CR9[31:0]  : Monitor window start delay (clock cycles)
+--    CR10[31:0] : Monitor window duration (clock cycles)
+--
+--    Note: All timing values are pre-converted to clock cycles by Python client (clk_utils.py)
 --
 -- 3. MCC I/O Mapping:
 --

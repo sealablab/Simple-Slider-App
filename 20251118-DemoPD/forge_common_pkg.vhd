@@ -18,7 +18,7 @@
 -- Register Map:
 --   CR0[31:29] - FORGE_READY control scheme (3-bit)
 --   CR10-CR14  - BRAM loader protocol (5 registers)
---   CR20-CR30  - Application registers (11 max)
+--   CR1-CR10   - Application registers (10 registers)
 --
 -- Migration Note:
 --   This is the forge-vhdl equivalent of volo_common_pkg.vhd.
@@ -73,18 +73,18 @@ package forge_common_pkg is
     constant BRAM_DATA_WIDTH : natural := 32;  -- Control Register width
 
     ----------------------------------------------------------------------------
-    -- Application Register Range (CR1-CR11)
+    -- Application Register Range (CR1-CR10)
     --
     -- MCC provides 16 control registers (CR0-CR15)
     -- CR0 reserved for FORGE control scheme (bits 31:29)
-    -- CR1-CR11 available for application (11 registers)
-    -- CR12-CR15 unused (future expansion)
+    -- CR1-CR10 available for application (10 registers)
+    -- CR11-CR15 unused (future expansion)
     --
     -- These are mapped to friendly signal names in the generated shim layer:
     --   Example: "arm_enable" → arm_enable : std_logic
     ----------------------------------------------------------------------------
     constant APP_REG_MIN : natural := 1;
-    constant APP_REG_MAX : natural := 11;
+    constant APP_REG_MAX : natural := 10;
 
     ----------------------------------------------------------------------------
     -- Helper Functions

@@ -15,15 +15,17 @@
 -- Register Mapping:
 --   CR1[3:0]   : Lifecycle control (arm_enable, ext_trigger_in, auto_rearm, fault_clear)
 --   CR2[15:0]  : Trigger output voltage (mV)
---   CR3[15:0]  : Trigger pulse duration (ns)
---   CR4[15:0]  : Intensity output voltage (mV)
---   CR5[15:0]  : Intensity pulse duration (ns)
---   CR6[15:0]  : Trigger wait timeout (s)
---   CR7[23:0]  : Cooldown interval (μs)
---   CR8[1:0]   : Monitor control (enable, expect_negative)
---   CR9[15:0]  : Monitor threshold voltage (mV)
---   CR10[31:0] : Monitor window start delay (ns)
---   CR11[31:0] : Monitor window duration (ns)
+--   CR3[15:0]  : Intensity output voltage (mV)
+--   CR4[31:0]  : Trigger pulse duration (clock cycles)
+--   CR5[31:0]  : Intensity pulse duration (clock cycles)
+--   CR6[31:0]  : Trigger wait timeout (clock cycles)
+--   CR7[31:0]  : Cooldown interval (clock cycles)
+--   CR8[31:0]  : Monitor control and threshold
+--                CR8[1:0]   - Monitor control (enable, expect_negative)
+--                CR8[15:2]  - Reserved
+--                CR8[31:16] - Monitor threshold voltage (mV, signed)
+--   CR9[31:0]  : Monitor window start delay (clock cycles)
+--   CR10[31:0] : Monitor window duration (clock cycles)
 --
 -- References:
 --   - forge_common_pkg.vhd (FORGE_READY control scheme)
@@ -55,7 +57,7 @@ entity DPD_shim is
 
         ------------------------------------------------------------------------
         -- Application Registers (from MCC_TOP_forge_loader)
-        -- Raw Control Registers CR1-CR11 (MCC provides CR0-CR15)
+        -- Raw Control Registers CR1-CR10 (MCC provides CR0-CR15)
         ------------------------------------------------------------------------
         app_reg_1 : in  std_logic_vector(31 downto 0);
         app_reg_2 : in  std_logic_vector(31 downto 0);
@@ -67,7 +69,6 @@ entity DPD_shim is
         app_reg_8 : in  std_logic_vector(31 downto 0);
         app_reg_9 : in  std_logic_vector(31 downto 0);
         app_reg_10 : in  std_logic_vector(31 downto 0);
-        app_reg_11 : in  std_logic_vector(31 downto 0);
 
         ------------------------------------------------------------------------
         -- BRAM Interface (from forge_bram_loader FSM)
@@ -104,22 +105,22 @@ architecture rtl of DPD_shim is
 
     -- Trigger output control
     signal app_reg_trig_out_voltage     : signed(15 downto 0);    -- Voltage (mV)
-    signal app_reg_trig_out_duration    : unsigned(15 downto 0);  -- Duration (ns)
+    signal app_reg_trig_out_duration    : unsigned(31 downto 0);  -- Duration (clock cycles)
 
     -- Intensity output control
     signal app_reg_intensity_voltage    : signed(15 downto 0);    -- Voltage (mV)
-    signal app_reg_intensity_duration   : unsigned(15 downto 0);  -- Duration (ns)
+    signal app_reg_intensity_duration   : unsigned(31 downto 0);  -- Duration (clock cycles)
 
     -- Timing control
-    signal app_reg_trigger_wait_timeout : unsigned(15 downto 0);  -- Timeout (s)
-    signal app_reg_cooldown_interval    : unsigned(23 downto 0);  -- Cooldown (μs)
+    signal app_reg_trigger_wait_timeout : unsigned(31 downto 0);  -- Timeout (clock cycles)
+    signal app_reg_cooldown_interval    : unsigned(31 downto 0);  -- Cooldown (clock cycles)
 
     -- Monitor/feedback
     signal app_reg_monitor_enable            : std_logic;              -- Enable comparator
     signal app_reg_monitor_expect_negative   : std_logic;              -- Polarity select
     signal app_reg_monitor_threshold_voltage : signed(15 downto 0);    -- Threshold (mV)
-    signal app_reg_monitor_window_start      : unsigned(31 downto 0);  -- Window delay (ns)
-    signal app_reg_monitor_window_duration   : unsigned(31 downto 0);  -- Window length (ns)
+    signal app_reg_monitor_window_start      : unsigned(31 downto 0);  -- Window delay (clock cycles)
+    signal app_reg_monitor_window_duration   : unsigned(31 downto 0);  -- Window length (clock cycles)
 
     ----------------------------------------------------------------------------
     -- Global Enable Signal
@@ -154,16 +155,16 @@ begin
             app_reg_auto_rearm_enable    <= '0';
             app_reg_fault_clear          <= '0';
             app_reg_trig_out_voltage     <= (others => '0');
-            app_reg_trig_out_duration    <= to_unsigned(100, 16);   -- Safe default 100ns
+            app_reg_trig_out_duration    <= to_unsigned(12500, 32);    -- Safe default 100ns @ 125MHz
             app_reg_intensity_voltage    <= (others => '0');
-            app_reg_intensity_duration   <= to_unsigned(200, 16);   -- Safe default 200ns
-            app_reg_trigger_wait_timeout <= to_unsigned(2, 16);     -- Safe default 2s
-            app_reg_cooldown_interval    <= to_unsigned(10, 24);    -- Safe default 10μs
-            app_reg_monitor_enable            <= '1';               -- Enabled by default
-            app_reg_monitor_expect_negative   <= '1';               -- Negative polarity
-            app_reg_monitor_threshold_voltage <= to_signed(-200, 16); -- -200mV default
+            app_reg_intensity_duration   <= to_unsigned(25000, 32);    -- Safe default 200ns @ 125MHz
+            app_reg_trigger_wait_timeout <= to_unsigned(250000000, 32); -- Safe default 2s @ 125MHz
+            app_reg_cooldown_interval    <= to_unsigned(1250, 32);     -- Safe default 10μs @ 125MHz
+            app_reg_monitor_enable            <= '1';                  -- Enabled by default
+            app_reg_monitor_expect_negative   <= '1';                  -- Negative polarity
+            app_reg_monitor_threshold_voltage <= to_signed(-200, 16);  -- -200mV default
             app_reg_monitor_window_start      <= (others => '0');
-            app_reg_monitor_window_duration   <= to_unsigned(5000, 32); -- 5μs default
+            app_reg_monitor_window_duration   <= to_unsigned(625000, 32); -- 5μs @ 125MHz
 
         elsif rising_edge(Clk) then
             -- Latch new register values on each clock cycle
@@ -177,33 +178,31 @@ begin
             -- CR2: Trigger output voltage
             app_reg_trig_out_voltage  <= signed(app_reg_2(15 downto 0));
 
-            -- CR3: Trigger pulse duration
-            app_reg_trig_out_duration <= unsigned(app_reg_3(15 downto 0));
+            -- CR3: Intensity output voltage
+            app_reg_intensity_voltage <= signed(app_reg_3(15 downto 0));
 
-            -- CR4: Intensity output voltage
-            app_reg_intensity_voltage <= signed(app_reg_4(15 downto 0));
+            -- CR4: Trigger pulse duration (clock cycles)
+            app_reg_trig_out_duration <= unsigned(app_reg_4);
 
-            -- CR5: Intensity pulse duration
-            app_reg_intensity_duration <= unsigned(app_reg_5(15 downto 0));
+            -- CR5: Intensity pulse duration (clock cycles)
+            app_reg_intensity_duration <= unsigned(app_reg_5);
 
-            -- CR6: Trigger wait timeout
-            app_reg_trigger_wait_timeout <= unsigned(app_reg_6(15 downto 0));
+            -- CR6: Trigger wait timeout (clock cycles)
+            app_reg_trigger_wait_timeout <= unsigned(app_reg_6);
 
-            -- CR7: Cooldown interval
-            app_reg_cooldown_interval <= unsigned(app_reg_7(23 downto 0));
+            -- CR7: Cooldown interval (clock cycles)
+            app_reg_cooldown_interval <= unsigned(app_reg_7);
 
-            -- CR8: Monitor control bits
+            -- CR8: Monitor control and threshold
             app_reg_monitor_enable          <= app_reg_8(0);
             app_reg_monitor_expect_negative <= app_reg_8(1);
+            app_reg_monitor_threshold_voltage <= signed(app_reg_8(31 downto 16));
 
-            -- CR9: Monitor threshold voltage
-            app_reg_monitor_threshold_voltage <= signed(app_reg_9(15 downto 0));
+            -- CR9: Monitor window start delay (clock cycles)
+            app_reg_monitor_window_start <= unsigned(app_reg_9);
 
-            -- CR10: Monitor window start delay
-            app_reg_monitor_window_start <= unsigned(app_reg_10);
-
-            -- CR11: Monitor window duration
-            app_reg_monitor_window_duration <= unsigned(app_reg_11);
+            -- CR10: Monitor window duration (clock cycles)
+            app_reg_monitor_window_duration <= unsigned(app_reg_10);
         end if;
     end process;
 
