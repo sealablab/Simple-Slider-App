@@ -143,6 +143,11 @@ class P1_HardwareBasicTests(HardwareTestBase):
 
         # Test 2: Complete FORGE enable - FSM should arm
         self.log("Test complete FORGE enable (should ARM)...", VerbosityLevel.VERBOSE)
+
+        # Clear CR1 from previous partial test (arm_enable was set but ineffective)
+        self.mcc.set_control(1, 0x00000000)
+        time.sleep(0.1)
+
         self.mcc.set_control(0, MCC_CR0_ALL_ENABLED)  # All 3 bits set
         time.sleep(0.3)
 
