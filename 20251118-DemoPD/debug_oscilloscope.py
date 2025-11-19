@@ -150,14 +150,15 @@ Examples:
         logger.info(f"   Slot {args.osc_slot}: Oscilloscope")
         osc = moku.set_instrument(args.osc_slot, Oscilloscope)
 
-        # Set up routing
+        # Set up routing (Moku:Go has only Output1 and Output2)
         logger.info("🔗 Setting up routing...")
         logger.info("   OutputC (FSM debug) → Output1 for easy scope observation")
+        logger.info("   OutputB (intensity) → Output2")
+        logger.info("   (OutputA trigger not routed to physical output - limited ports)")
         moku.set_connections(connections=[
-            {'source': 'Input1', 'destination': f'Slot{args.cc_slot}InA'},
-            {'source': f'Slot{args.cc_slot}OutA', 'destination': 'Output2'},     # Trigger output
-            {'source': f'Slot{args.cc_slot}OutB', 'destination': 'Output3'},     # Intensity output
-            {'source': f'Slot{args.cc_slot}OutC', 'destination': 'Output1'},     # FSM debug (for scope)
+            {'source': 'Input1', 'destination': f'Slot{args.cc_slot}InA'},         # External trigger input
+            {'source': f'Slot{args.cc_slot}OutB', 'destination': 'Output2'},       # Intensity output
+            {'source': f'Slot{args.cc_slot}OutC', 'destination': 'Output1'},       # FSM debug (for scope)
             {'source': f'Slot{args.cc_slot}OutC', 'destination': f'Slot{args.osc_slot}InA'},  # Also to oscilloscope
         ])
 

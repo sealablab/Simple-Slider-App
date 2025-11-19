@@ -128,15 +128,16 @@ class DPDDebugger:
             logger.info(f"   Slot {cc_slot}: CloudCompile (using existing bitstream)")
             self.mcc = self.m.set_instrument(cc_slot, CloudCompile)
 
-        # Set up routing: OutputC → Output1 + Oscilloscope for FSM debug
+        # Set up routing (Moku:Go has only Output1 and Output2)
         logger.info("🔗 Setting up routing...")
         logger.info("   OutputC (FSM debug) → Output1 for easy scope observation")
+        logger.info("   OutputB (intensity) → Output2")
+        logger.info("   (OutputA trigger not routed to physical output - limited ports)")
         self.m.set_connections(connections=[
-            {'source': 'Input1', 'destination': f'Slot{cc_slot}InA'},           # External trigger
-            {'source': f'Slot{cc_slot}OutA', 'destination': 'Output2'},         # Trigger output
-            {'source': f'Slot{cc_slot}OutB', 'destination': 'Output3'},         # Intensity output
-            {'source': f'Slot{cc_slot}OutC', 'destination': 'Output1'},         # FSM debug (for scope)
-            {'source': f'Slot{cc_slot}OutC', 'destination': f'Slot{osc_slot}InA'},  # Also to oscilloscope
+            {'source': 'Input1', 'destination': f'Slot{cc_slot}InA'},              # External trigger input
+            {'source': f'Slot{cc_slot}OutB', 'destination': 'Output2'},            # Intensity output
+            {'source': f'Slot{cc_slot}OutC', 'destination': 'Output1'},            # FSM debug (for scope)
+            {'source': f'Slot{cc_slot}OutC', 'destination': f'Slot{osc_slot}InA'}, # Also to oscilloscope
         ])
 
         logger.success("✅ Instruments deployed and routing configured")
