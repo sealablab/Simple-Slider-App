@@ -73,43 +73,6 @@ def voltage_mv(volts: float) -> int:
     return int(volts * 1000)
 
 
-def extra_sanity_checking(moku: MultiInstrument, args, platform_id: int | None,
-                          total_start: float) -> CloudCompile:
-    """
-    Get CloudCompile instance with minimal validation (skips expensive checks).
-
-    This function skips expensive sanity checking but still provides a CloudCompile
-    instance needed for operations. Uses args directly without validation.
-
-    Args:
-        moku: Connected MultiInstrument instance
-        args: Parsed command line arguments
-        platform_id: Platform ID (if specified) - unused but kept for compatibility
-        total_start: Start time for overall timing - unused but kept for compatibility
-
-    Returns:
-        CloudCompile instance
-    """
-    # Skip expensive validation - just use args directly
-    slot_num = args.slot if args.slot else 2  # Default to slot 2 if not specified
-
-    # Resolve bitstream path if provided (minimal - no existence check)
-    bitstream_path = None
-    if args.bitstream:
-        bitstream_path = args.bitstream
-        # Resolve relative paths only
-        if not bitstream_path.is_absolute():
-            bitstream_path = PROJECT_ROOT / bitstream_path
-
-    # Get CloudCompile instance (skip expensive validation)
-    logger.info(f"Accessing CloudCompile in slot {slot_num}...")
-    try:
-        cc = get_cloudcompile_instance(moku, slot_num, bitstream_path)
-        logger.success("CloudCompile instance ready")
-        return cc
-    except Exception as e:
-        logger.error(f"Failed to get CloudCompile instance: {e}")
-        sys.exit(1)
 
 
 def set_controls_with_timeout(cc: CloudCompile, config: DPDConfig, iteration: int, timeout: float = 1.0) -> None:
@@ -133,6 +96,9 @@ def set_controls_with_timeout(cc: CloudCompile, config: DPDConfig, iteration: in
     logger.info(f"  trig_out_duration:  {cycles_to_ns(config.trig_out_duration):.1f} ns ({config.trig_out_duration} cycles)")
     logger.info(f"  intensity_voltage:  {config.intensity_voltage} mV ({config.intensity_voltage/1000:.2f}V)")
     logger.info(f"  intensity_duration: {cycles_to_ns(config.intensity_duration):.1f} ns ({config.intensity_duration} cycles)")
+    logger.info(f"\n  Expected external behavior:")
+    logger.info(f"    • Trigger output: {config.trig_out_voltage/1000:.2f}V pulse for {cycles_to_ns(config.trig_out_duration):.1f}ns")
+    logger.info(f"    • Intensity output: {config.intensity_voltage/1000:.2f}V pulse for {cycles_to_ns(config.intensity_duration):.1f}ns")
 
     # Use threading to implement timeout
     result = [None]  # Use list to allow modification from nested function
@@ -240,7 +206,10 @@ def generate_dpd_configs(num_iterations: int = 10) -> list[DPDConfig]:
 
 
 def main():
-    args, platform_id = handle_arg_parsing(
+    import argparse
+
+    # Extend handle_arg_parsing to add --interactive flag
+    parser = argparse.ArgumentParser(
         description='DPD Linear Test - Sequential DPDConfig application with timing introspection',
         epilog="""
 Examples:
@@ -250,16 +219,28 @@ Examples:
   # Specify slot
   python dpd_linear_test_util.py 192.168.1.100 --slot 1
 
-  # Specify platform
-  python dpd_linear_test_util.py 192.168.1.100 --platform moku_go
+  # Interactive mode (pause between iterations)
+  python dpd_linear_test_util.py 192.168.1.100 --interactive
 
   # Upload bitstream and test
   python dpd_linear_test_util.py 192.168.1.100 --bitstream ./dpd_bitstream.tar
 
   # Force connect (disconnect existing connections)
   python dpd_linear_test_util.py 192.168.1.100 --force
-        """
+        """,
+        formatter_class=argparse.RawDescriptionHelpFormatter
     )
+
+    parser.add_argument('device_ip', help='IP address of the Moku device')
+    parser.add_argument('--slot', type=int, help='Slot number (default: 2)')
+    parser.add_argument('--platform', help='Platform name (e.g., moku_go)')
+    parser.add_argument('--bitstream', type=Path, help='Path to bitstream file')
+    parser.add_argument('--force', action='store_true', help='Force connection (disconnect existing)')
+    parser.add_argument('--interactive', action='store_true',
+                       help='Pause between iterations for manual verification')
+
+    args = parser.parse_args()
+    platform_id = None  # Will be determined by moku_cli_common if needed
 
     # Overall timing
     total_start = time.perf_counter()
@@ -276,8 +257,23 @@ Examples:
         logger.error(f"Connection failed: {e}")
         sys.exit(1)
 
-    # Get CloudCompile instance (skips expensive sanity checking)
-    cc = extra_sanity_checking(moku, args, platform_id, total_start)
+    # Get CloudCompile instance
+    slot_num = args.slot if args.slot else 2  # Default to slot 2 if not specified
+
+    # Resolve bitstream path if provided
+    bitstream_path = None
+    if args.bitstream:
+        bitstream_path = args.bitstream
+        if not bitstream_path.is_absolute():
+            bitstream_path = PROJECT_ROOT / bitstream_path
+
+    logger.info(f"Accessing CloudCompile in slot {slot_num}...")
+    try:
+        cc = get_cloudcompile_instance(moku, slot_num, bitstream_path)
+        logger.success("CloudCompile instance ready")
+    except Exception as e:
+        logger.error(f"Failed to get CloudCompile instance: {e}")
+        sys.exit(1)
 
     # Generate 10 DPDConfig instances
     logger.info("\n" + "="*60)
@@ -298,7 +294,18 @@ Examples:
         try:
             set_controls_with_timeout(cc, config, iteration=i, timeout=0.4)
             successful_iterations += 1
-            time.sleep(0.2)  # Brief pause between iterations
+
+            # Pause between iterations
+            if args.interactive and i < len(configs):
+                logger.info(f"\n  [Press Enter to continue to iteration {i+1}, or Ctrl+C to stop]")
+                try:
+                    input()
+                except KeyboardInterrupt:
+                    logger.warning(f"\n\nStopped by user after {i} iterations")
+                    break
+            else:
+                time.sleep(0.2)  # Brief pause between iterations
+
         except Exception as e:
             error_msg = str(e)
             if "timeout" in error_msg.lower() or "timed out" in error_msg.lower():

@@ -37,16 +37,21 @@ STATE_COOLDOWN = 0b000011  # 3
 STATE_FAULT = 0b111111  # 63
 
 # HVS (Hierarchical Voltage Encoding) Digital Constants
-# OutputC shows: digital_value = state × 200 + status_offset
+# OutputC shows: digital_value = state × 3277 + status_offset
 # These are DIGITAL units (not voltages), sent to 16-bit DAC
-HVS_DIGITAL_IDLE = 0  # State 0 × 200
-HVS_DIGITAL_ARMED = 200  # State 1 × 200
-HVS_DIGITAL_FIRING = 400  # State 2 × 200
-HVS_DIGITAL_COOLDOWN = 600  # State 3 × 200
+# Updated 2025-01-18: Increased from 200 to 3277 units/state for human-visible scope debugging
+# 3277 digital units = 0.5V per state @ ±5V full scale (Moku:Go)
+# State voltages: IDLE=0V, ARMED=0.5V, FIRING=1.0V, COOLDOWN=1.5V
+HVS_DIGITAL_UNITS_PER_STATE = 3277  # Digital units per state (0.5V per state @ ±5V FS)
+HVS_DIGITAL_IDLE = 0 * HVS_DIGITAL_UNITS_PER_STATE  # 0 (0.0V)
+HVS_DIGITAL_ARMED = 1 * HVS_DIGITAL_UNITS_PER_STATE  # 3277 (0.5V)
+HVS_DIGITAL_FIRING = 2 * HVS_DIGITAL_UNITS_PER_STATE  # 6554 (1.0V)
+HVS_DIGITAL_COOLDOWN = 3 * HVS_DIGITAL_UNITS_PER_STATE  # 9831 (1.5V)
 # FAULT: Negative value (sign flip when status[7]=1)
 
 # HVS tolerance for digital comparisons (allows status offset variation)
-HVS_DIGITAL_TOLERANCE = 20  # ±20 digital units (relaxed for simulation)
+# Increased tolerance to ±200 digital units (~30mV @ ±5V FS) for new scaling
+HVS_DIGITAL_TOLERANCE = 200  # ±200 digital units (allows ±100 status offset range)
 
 # FORGE Control Scheme Constants (CR0[31:29])
 FORGE_READY_BIT = 31  # Set by MCC after deployment

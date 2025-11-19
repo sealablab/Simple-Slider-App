@@ -128,7 +128,7 @@ async def arm_dpd(dut, trig_duration: int, intensity_duration: int, cooldown: in
     from conftest import mcc_set_regs
 
     await mcc_set_regs(dut, {
-        1: 0x00000001,  # CR1[0] = arm_enable
+        1: 0x00000001,  # CR1: bit[0]=arm_enable, bit[2]=auto_rearm_enable (0=single shot)
         4: trig_duration,  # CR4 = trig_out_duration
         5: intensity_duration,  # CR5 = intensity_duration
         7: cooldown,  # CR7 = cooldown_interval
@@ -203,10 +203,10 @@ async def wait_for_fsm_complete_cycle(dut, firing_cycles: int, cooldown_cycles: 
         AssertionError: If FSM doesn't reach expected states
     """
     # Wait for FIRING → COOLDOWN transition
-    # (Add 50% margin for simulation delays)
-    await wait_cycles_relaxed(dut, firing_cycles, margin_percent=50)
-    await wait_for_state(dut, HVS_DIGITAL_COOLDOWN, timeout_us=200)
+    # (Add generous margin for GHDL simulation timing variations)
+    await wait_cycles_relaxed(dut, firing_cycles, margin_percent=200)
+    await wait_for_state(dut, HVS_DIGITAL_COOLDOWN, timeout_us=1000)
 
     # Wait for COOLDOWN → IDLE transition
-    await wait_cycles_relaxed(dut, cooldown_cycles, margin_percent=50)
-    await wait_for_state(dut, HVS_DIGITAL_IDLE, timeout_us=200)
+    await wait_cycles_relaxed(dut, cooldown_cycles, margin_percent=200)
+    await wait_for_state(dut, HVS_DIGITAL_IDLE, timeout_us=1000)

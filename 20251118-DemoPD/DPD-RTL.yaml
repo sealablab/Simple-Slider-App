@@ -21,14 +21,15 @@
 #   - Scaling: 3277 digital units per state = 0.5V per state @ ±5V full scale
 #   - Digital-to-voltage: voltage = (digital_units / 32768) * 5V
 #   - State voltages (human-readable on scope, set to 500mV/div):
-#       IDLE (state 0):     0 units    → 0.0V
-#       ARMED (state 1):    3277 units → 0.5V
-#       FIRING (state 2):   6554 units → 1.0V
-#       COOLING (state 3):  9831 units → 1.5V
+#       IDLE (state 0):     0 units    → 0.0V (exactly)
+#       ARMED (state 1):    3277 units → 0.500V
+#       FIRING (state 2):   6554 units → 1.000V
+#       COOLDOWN (state 3): 9831 units → 1.500V
 #       FAULT (status[7]=1): Negative voltage (sign flip)
+#   - Status offset: ±100 digital units max (±0.031V fine-grained debugging)
 #   - Implementation: forge_hierarchical_encoder.vhd (DIGITAL_UNITS_PER_STATE=3277)
 #   - Updated 2025-01-18: Increased from 200 units/state (30mV steps) to 3277 units/state (500mV steps)
-#     for human-visible debugging on standard oscilloscopes
+#     for human-visible debugging on standard oscilloscopes (16x improvement)
 #
 # Trigger Sources (ARMED → FIRING transition):
 #   1. Hardware trigger: InputA voltage crosses threshold (CR2[31:16])

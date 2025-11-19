@@ -1,4 +1,4 @@
-HVS# HVS
+**HVS**# HVS
 **Hierarchical Voltage Encoding Scheme**
 ``` python
 The Hierarchical Voltage Encoding Scheme
