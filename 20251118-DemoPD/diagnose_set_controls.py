@@ -246,17 +246,17 @@ def run_diagnostics(cc: CloudCompile):
 
     # Test 2c: All DPD registers (CR0-CR10)
     dpd_controls = [
-        {"id": 0, "value": 0xE0000000},  # CR0: FORGE_READY
-        {"id": 1, "value": 0x00000005},  # CR1: arm_enable | auto_rearm_enable
-        {"id": 2, "value": 0x000007D0},  # CR2: 2000 mV
-        {"id": 3, "value": 0x000005DC},  # CR3: 1500 mV
-        {"id": 4, "value": 0x0000003E},  # CR4: 62 cycles
-        {"id": 5, "value": 0x0000007D},  # CR5: 125 cycles
-        {"id": 6, "value": 0x2540BE40},  # CR6: 625000000 cycles
-        {"id": 7, "value": 0x000030D4},  # CR7: 12500 cycles
+        {"id": 0, "value": 0xE0000000},  # CR0: FORGE_READY bits [31:29]
+        {"id": 1, "value": 0x00000005},  # CR1: arm_enable[0]=1, auto_rearm_enable[2]=1
+        {"id": 2, "value": 0x000007D0},  # CR2: 2000 mV trigger output
+        {"id": 3, "value": 0x000005DC},  # CR3: 1500 mV intensity output
+        {"id": 4, "value": 0x0000003E},  # CR4: 62 cycles trig duration
+        {"id": 5, "value": 0x0000007D},  # CR5: 125 cycles intensity duration
+        {"id": 6, "value": 0x2540BE40},  # CR6: 625000000 cycles timeout
+        {"id": 7, "value": 0x000030D4},  # CR7: 12500 cycles cooldown
         {"id": 8, "value": 0xFE0C0003},  # CR8: monitor control + threshold
-        {"id": 9, "value": 0x00000000},  # CR9: 0 cycles
-        {"id": 10, "value": 0x000004E2}, # CR10: 1250 cycles
+        {"id": 9, "value": 0x00000000},  # CR9: 0 cycles monitor window start
+        {"id": 10, "value": 0x000004E2}, # CR10: 1250 cycles monitor duration
     ]
 
     test_set_controls_format(

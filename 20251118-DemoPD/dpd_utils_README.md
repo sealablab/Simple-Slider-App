@@ -50,7 +50,12 @@ Provides the `DPDConfig` dataclass for managing DPD control register state.
 |----------|------|-------------|-------|
 | CR0 | [31:29] | FORGE_READY control (auto-set: forge_ready, user_enable, clk_enable) | boolean |
 | CR0 | [28:0] | Reserved | - |
-| CR1 | [3:0] | Lifecycle control (arm_enable, ext_trigger_in, auto_rearm_enable, fault_clear) | boolean |
+| CR1 | [0] | arm_enable - Arm FSM (IDLE → ARMED) | boolean |
+| CR1 | [1] | sw_trigger - Software trigger (ARMED → FIRING, edge-detected) | boolean |
+| CR1 | [2] | auto_rearm_enable - Re-arm after cooldown (burst mode) | boolean |
+| CR1 | [3] | fault_clear - Clear fault state (edge-detected) | boolean |
+| CR1 | [31:4] | Reserved | - |
+| CR2 | [31:16] | Input trigger voltage threshold (hardware comparator) | mV (signed 16-bit) |
 | CR2 | [15:0] | Trigger output voltage | mV (signed 16-bit) |
 | CR3 | [15:0] | Intensity output voltage | mV (signed 16-bit) |
 | CR4 | [31:0] | Trigger pulse duration | clock cycles |
