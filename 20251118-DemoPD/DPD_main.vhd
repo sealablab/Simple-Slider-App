@@ -90,12 +90,16 @@ entity DPD_main is
         -- MCC I/O (Native MCC Types)
         -- OutputA: Trigger output to probe (16-bit signed DAC, ±5V)
         -- OutputB: Intensity/amplitude to probe (16-bit signed DAC, ±5V)
-        -- OutputC: FSM state debug (16-bit signed, for oscilloscope)
-        -- OutputD: Reserved (future use)
         ------------------------------------------------------------------------
         OutputA : out signed(15 downto 0);
         OutputB : out signed(15 downto 0);
-        OutputC : out signed(15 downto 0)
+
+        ------------------------------------------------------------------------
+        -- Debug Outputs (for HVS encoding in shim layer)
+        -- Following FORGE standard: export state + status for hierarchical encoding
+        ------------------------------------------------------------------------
+        state_vector  : out std_logic_vector(5 downto 0);  -- FSM state (0-63)
+        status_vector : out std_logic_vector(7 downto 0)   -- App status (bit 7 = fault)
     );
 end entity DPD_main;
 
@@ -157,7 +161,11 @@ architecture rtl of DPD_main is
     ----------------------------------------------------------------------------
     signal trig_out      : signed(15 downto 0);
     signal intensity_out : signed(15 downto 0);
-    signal state_out     : signed(15 downto 0);
+
+    ----------------------------------------------------------------------------
+    -- Debug Signals (registered for clean scope output)
+    ----------------------------------------------------------------------------
+    signal status_reg : std_logic_vector(7 downto 0);
 
 begin
 
@@ -386,7 +394,6 @@ begin
         if Reset = '1' then
             trig_out <= (others => '0');
             intensity_out <= (others => '0');
-            state_out <= (others => '0');
         elsif rising_edge(Clk) then
             if Enable = '1' then
                 -- Control outputs based on FSM state
@@ -399,14 +406,42 @@ begin
                     trig_out <= (others => '0');
                     intensity_out <= (others => '0');
                 end if;
-
-                -- FSM state for debug (zero-padded to 16-bit)
-                state_out <= signed("0000000000" & state);
             else
                 -- When disabled, force safe state
                 trig_out <= (others => '0');
                 intensity_out <= (others => '0');
-                state_out <= (others => '0');
+            end if;
+        end if;
+    end process;
+
+    ------------------------------------------------------------------------
+    -- Debug Status Vector (Registered for HVS Encoding)
+    --
+    -- Provides glitch-free status output for hierarchical voltage encoding
+    -- Status bits follow FORGE standard:
+    --   [7] = fault_detected (MUST be fault for HVS sign flip)
+    --   [6] = timeout_occurred
+    --   [5] = monitor_triggered
+    --   [4] = monitor_window_open
+    --   [3] = firing_complete
+    --   [2] = cooldown_complete
+    --   [1:0] = reserved (set to '0')
+    ------------------------------------------------------------------------
+    STATUS_REGISTER: process(Clk, Reset)
+    begin
+        if Reset = '1' then
+            status_reg <= (others => '0');
+        elsif rising_edge(Clk) then
+            if Enable = '1' then
+                status_reg <= fault_detected &
+                              timeout_occurred &
+                              monitor_triggered &
+                              monitor_window_open &
+                              firing_complete &
+                              cooldown_complete &
+                              "00";  -- Reserved bits
+            else
+                status_reg <= (others => '0');
             end if;
         end if;
     end process;
@@ -444,7 +479,12 @@ begin
     ----------------------------------------------------------------------------
     OutputA <= trig_out;        -- Trigger signal to probe
     OutputB <= intensity_out;   -- Intensity/amplitude to probe
-    OutputC <= state_out;       -- FSM state debug
+
+    ----------------------------------------------------------------------------
+    -- Export debug signals for HVS encoding (done in shim layer)
+    ----------------------------------------------------------------------------
+    state_vector  <= state;      -- 6-bit FSM state
+    status_vector <= status_reg; -- 8-bit registered status
 
     ----------------------------------------------------------------------------
     -- BRAM Reserved for Future Use

@@ -139,6 +139,12 @@ architecture rtl of DPD_shim is
     signal hw_trigger_above_threshold : std_logic;  -- Level indicator
     signal hw_trigger_crossing_count : unsigned(15 downto 0);  -- Diagnostic counter
 
+    ----------------------------------------------------------------------------
+    -- Debug Signals (for HVS encoding)
+    ----------------------------------------------------------------------------
+    signal state_vector_from_main  : std_logic_vector(5 downto 0);
+    signal status_vector_from_main : std_logic_vector(7 downto 0);
+
 begin
 
     ----------------------------------------------------------------------------
@@ -284,13 +290,31 @@ begin
             bram_data => bram_data,
             bram_we   => bram_we,
 
-            -- Physical I/O (3 outputs from DPD_main)
+            -- Physical I/O (2 outputs from DPD_main)
             OutputA => OutputA,
             OutputB => OutputB,
-            OutputC => OutputC
+
+            -- Debug outputs (for HVS encoding in shim)
+            state_vector  => state_vector_from_main,
+            status_vector => status_vector_from_main
         );
 
-
+    ----------------------------------------------------------------------------
+    -- Instantiate Hierarchical Voltage Encoder (HVS)
+    --
+    -- Encodes 6-bit state + 8-bit status into OutputC using HVS scheme:
+    -- - 200 digital units per state (visible on scope)
+    -- - ±100 digital units status offset (fine-grained debug)
+    -- - Negative voltage when status[7]=1 (fault indication)
+    ----------------------------------------------------------------------------
+    HVS_ENCODER_INST: entity WORK.forge_hierarchical_encoder
+        port map (
+            clk           => Clk,
+            reset         => Reset,
+            state_vector  => state_vector_from_main,
+            status_vector => status_vector_from_main,
+            voltage_out   => OutputC
+        );
 
 end architecture rtl;
 
