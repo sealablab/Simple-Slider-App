@@ -22,12 +22,12 @@ from cocotb.triggers import ClockCycles
 import sys
 from pathlib import Path
 
-# Add forge_cocotb to path for TestBase
-FORGE_COCOTB_PATH = Path(__file__).parent.parent.parent.parent / "libs" / "forge-vhdl" / "python" / "forge_cocotb"
-if FORGE_COCOTB_PATH.exists():
-    sys.path.insert(0, str(FORGE_COCOTB_PATH))
+# Add cocotb_tests directory to path for local test_base
+COCOTB_TESTS_PATH = Path(__file__).parent.parent
+if COCOTB_TESTS_PATH.exists():
+    sys.path.insert(0, str(COCOTB_TESTS_PATH))
 
-from forge_cocotb.test_base import TestBase
+from test_base import TestBase
 
 # Import DPD test utilities
 from conftest import (
