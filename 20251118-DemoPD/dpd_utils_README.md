@@ -184,6 +184,8 @@ duration_up = ns_to_cycles(1.5, round_direction="up")  # 1 cycle
 
 ### Validation
 
+#XXX #FIXME we should make these 15-bit **unsigned** values for simplicity / safety
+
 The `DPDConfig` class automatically validates:
 - 16-bit signed voltage values (-32768 to 32767 mV)
 - 32-bit unsigned timing values (0 to 4,294,967,295 cycles)
