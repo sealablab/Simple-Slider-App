@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+#
+# GHDL Wrapper with Intelligent Output Filtering
+#
+# This script wraps GHDL commands and pipes output through the Python filter.
+# Usage: Set SIM_CMD=/path/to/ghdl_filtered in environment or use directly.
+#
+# Author: Moku Instrument Forge Team
+# Date: 2025-11-18
+#
+
+# Find the real GHDL executable
+REAL_GHDL=$(which ghdl)
+
+if [ -z "$REAL_GHDL" ]; then
+    echo "ERROR: ghdl not found in PATH" >&2
+    exit 1
+fi
+
+# Determine filter level from environment variable (default: normal)
+FILTER_LEVEL="${GHDL_FILTER_LEVEL:-normal}"
+
+# Get the directory where this script lives (contains ghdl_filter.py)
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Check if this is a simulation run command (contains -r or --elab-run)
+if [[ "$*" =~ (-r|--elab-run) ]]; then
+    # This is a simulation run - apply filtering
+    "$REAL_GHDL" "$@" 2>&1 | python3 "$SCRIPT_DIR/ghdl_filter.py" --level "$FILTER_LEVEL"
+    exit ${PIPESTATUS[0]}  # Return GHDL's exit code, not filter's
+else
+    # This is elaboration, analysis, or other command - no filtering
+    "$REAL_GHDL" "$@"
+    exit $?
+fi

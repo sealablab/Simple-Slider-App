@@ -15,11 +15,17 @@ Usage in tests:
         await reset_active_high(dut, rst_signal="Reset")
         # ... your test logic
 
+GHDL Output Filtering:
+    The GHDL output filter is automatically enabled when running tests via run.py.
+    Filter level is auto-selected based on COCOTB_VERBOSITY or can be overridden
+    with the GHDL_FILTER environment variable.
+
 Author: Moku Instrument Forge Team
 Date: 2025-11-18
 """
 
 import cocotb
+import os
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge, FallingEdge, ClockCycles, with_timeout
 
