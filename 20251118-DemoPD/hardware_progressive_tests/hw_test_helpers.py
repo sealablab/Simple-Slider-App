@@ -258,7 +258,10 @@ def clear_fault(mcc):
 
 def reset_fsm_to_idle(mcc, osc, timeout_ms: float = 1000) -> bool:
     """
-    Reset FSM to IDLE state by clearing all control registers.
+    Reset FSM to IDLE state by clearing application control registers.
+
+    CRITICAL: We must keep FORGE control (CR0) enabled throughout reset,
+    otherwise the FSM cannot transition (global_enable=0 blocks FSM state changes).
 
     Args:
         mcc: CloudCompile instrument instance
@@ -268,17 +271,18 @@ def reset_fsm_to_idle(mcc, osc, timeout_ms: float = 1000) -> bool:
     Returns:
         True if FSM reached IDLE, False on timeout
     """
-    # Clear all control registers
-    for i in range(16):
+    # Ensure FORGE control is enabled FIRST (before clearing other registers)
+    init_forge_ready(mcc)
+    time.sleep(0.05)
+
+    # Clear application control registers (CR1-CR15), but NOT CR0 (FORGE control)
+    for i in range(1, 16):
         try:
             mcc.set_control(i, 0)
         except:
             pass  # Some registers may not exist
 
-    time.sleep(0.1)
-
-    # Re-initialize FORGE_READY
-    init_forge_ready(mcc)
+    time.sleep(0.2)  # Give FSM time to settle to IDLE with FORGE enabled
 
     # Wait for IDLE state
     return wait_for_state(osc, "IDLE", timeout_ms=timeout_ms)
