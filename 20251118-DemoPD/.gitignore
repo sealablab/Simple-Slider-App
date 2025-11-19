@@ -3,5 +3,25 @@
 work-obj93.cf
 *.cf
 
+# Cocotb/simulation artifacts
+sim_build/
+*.xml
+
+# Moku configuration files
+*.mokuconf
+extracted/
+c/extracted/
+example_configs/*/extracted/
+
+# macOS system files
+.DS_Store
+
+# Vim swap files
+*.swp
+
+# Log files
+*_log.txt
+debuglog*.txt
+
 # Claude local settings
 .claude/settings.local.json
