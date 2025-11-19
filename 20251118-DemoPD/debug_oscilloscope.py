@@ -48,21 +48,30 @@ logger.add(
 
 
 def decode_state(voltage: float) -> str:
-    """Decode FSM state from voltage reading."""
-    if abs(voltage - 0.0) < 0.15:
+    """
+    Decode FSM state from voltage reading.
+
+    HVS Encoding: 200 digital units per state step
+    Voltage = (digital_units / 32768) * 5V
+    State voltages:
+      - IDLE (0):      0 units    → 0.000V
+      - ARMED (1):     200 units  → 0.0305V (~30.5mV)
+      - FIRING (2):    400 units  → 0.0610V (~61mV)
+      - COOLDOWN (3):  600 units  → 0.0916V (~92mV)
+      - FAULT:         negative voltage
+    """
+    if abs(voltage - 0.000) < 0.020:  # ±20mV tolerance
         return "IDLE"
-    elif abs(voltage - 0.5) < 0.15:
+    elif abs(voltage - 0.0305) < 0.020:
         return "ARMED"
-    elif abs(voltage - 1.0) < 0.15:
+    elif abs(voltage - 0.0610) < 0.020:
         return "FIRING"
-    elif abs(voltage - 1.5) < 0.15:
-        return "COOLING"
-    elif abs(voltage - 2.0) < 0.15:
-        return "DONE"
-    elif voltage < -1.0:
+    elif abs(voltage - 0.0916) < 0.020:
+        return "COOLDOWN"
+    elif voltage < -0.020:  # Any negative voltage = fault
         return "FAULT"
     else:
-        return f"UNKNOWN({voltage:.3f}V)"
+        return f"UNKNOWN({voltage:.4f}V)"
 
 
 def main():
@@ -143,11 +152,13 @@ Examples:
 
         # Set up routing
         logger.info("🔗 Setting up routing...")
+        logger.info("   OutputC (FSM debug) → Output1 for easy scope observation")
         moku.set_connections(connections=[
             {'source': 'Input1', 'destination': f'Slot{args.cc_slot}InA'},
-            {'source': f'Slot{args.cc_slot}OutA', 'destination': 'Output1'},
-            {'source': f'Slot{args.cc_slot}OutB', 'destination': 'Output2'},
-            {'source': f'Slot{args.cc_slot}OutC', 'destination': f'Slot{args.osc_slot}InA'},
+            {'source': f'Slot{args.cc_slot}OutA', 'destination': 'Output2'},     # Trigger output
+            {'source': f'Slot{args.cc_slot}OutB', 'destination': 'Output3'},     # Intensity output
+            {'source': f'Slot{args.cc_slot}OutC', 'destination': 'Output1'},     # FSM debug (for scope)
+            {'source': f'Slot{args.cc_slot}OutC', 'destination': f'Slot{args.osc_slot}InA'},  # Also to oscilloscope
         ])
 
         logger.success("✓ Connected")

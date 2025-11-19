@@ -75,20 +75,20 @@ logger.add(
 
 
 # FSM State Decoding (from OutputC via oscilloscope)
-# Based on HVS (Half-Volt Spaced) encoding: signed 16-bit values
-# Voltage = (state_value * 5V) / 32768
-# For better discrimination, using ~0.5V steps
+# Based on HVS (Hierarchical Voltage Scaling) encoding
+# Encoding: 200 digital units per state step
+# Voltage = (digital_units / 32768) * 5V
+# Note: DPD only has 4 states (no DONE state exists in hardware)
 STATE_MAP = {
-    "IDLE":      0.0,    # 0x0000 → 0.00V
-    "ARMED":     0.5,    # State 1 → ~0.5V
-    "FIRING":    1.0,    # State 2 → ~1.0V
-    "COOLING":   1.5,    # State 3 → ~1.5V
-    "DONE":      2.0,    # State 4 → ~2.0V
-    "FAULT":     -2.5,   # Negative voltage = fault condition
+    "IDLE":      0.0000,   # State 0: 0 digital units → 0.000V
+    "ARMED":     0.0305,   # State 1: 200 digital units → 30.5mV
+    "FIRING":    0.0610,   # State 2: 400 digital units → 61.0mV
+    "COOLING":   0.0916,   # State 3: 600 digital units → 91.6mV
+    "FAULT":     -0.100,   # Negative voltage = fault condition (any negative)
 }
 
 # Reverse lookup with tolerance
-def decode_fsm_state(voltage: float, tolerance: float = 0.15) -> Optional[str]:
+def decode_fsm_state(voltage: float, tolerance: float = 0.020) -> Optional[str]:
     """Decode FSM state from oscilloscope voltage reading."""
     for state, expected_v in STATE_MAP.items():
         if abs(voltage - expected_v) < tolerance:
@@ -128,13 +128,15 @@ class DPDDebugger:
             logger.info(f"   Slot {cc_slot}: CloudCompile (using existing bitstream)")
             self.mcc = self.m.set_instrument(cc_slot, CloudCompile)
 
-        # Set up routing: OutputC → Oscilloscope Ch1 for FSM debug
+        # Set up routing: OutputC → Output1 + Oscilloscope for FSM debug
         logger.info("🔗 Setting up routing...")
+        logger.info("   OutputC (FSM debug) → Output1 for easy scope observation")
         self.m.set_connections(connections=[
-            {'source': 'Input1', 'destination': f'Slot{cc_slot}InA'},       # External trigger
-            {'source': f'Slot{cc_slot}OutA', 'destination': 'Output1'},     # Trigger output
-            {'source': f'Slot{cc_slot}OutB', 'destination': 'Output2'},     # Intensity output
-            {'source': f'Slot{cc_slot}OutC', 'destination': f'Slot{osc_slot}InA'},  # FSM debug
+            {'source': 'Input1', 'destination': f'Slot{cc_slot}InA'},           # External trigger
+            {'source': f'Slot{cc_slot}OutA', 'destination': 'Output2'},         # Trigger output
+            {'source': f'Slot{cc_slot}OutB', 'destination': 'Output3'},         # Intensity output
+            {'source': f'Slot{cc_slot}OutC', 'destination': 'Output1'},         # FSM debug (for scope)
+            {'source': f'Slot{cc_slot}OutC', 'destination': f'Slot{osc_slot}InA'},  # Also to oscilloscope
         ])
 
         logger.success("✅ Instruments deployed and routing configured")
@@ -176,10 +178,10 @@ class DPDDebugger:
             state, voltage = self.read_fsm_state(poll_count=3)
 
             if expected_state and state == expected_state:
-                logger.success(f"✅ State: {state} ({voltage:.2f}V)")
+                logger.success(f"✅ State: {state} ({voltage:.4f}V)")
                 return state
             elif not expected_state:
-                logger.info(f"📊 State: {state} ({voltage:.2f}V)")
+                logger.info(f"📊 State: {state} ({voltage:.4f}V)")
                 return state
 
             time.sleep(0.1)
@@ -187,7 +189,7 @@ class DPDDebugger:
         # Timeout
         state, voltage = self.read_fsm_state(poll_count=3)
         if expected_state:
-            logger.warning(f"⚠️  Timeout waiting for {expected_state}, got {state} ({voltage:.2f}V)")
+            logger.warning(f"⚠️  Timeout waiting for {expected_state}, got {state} ({voltage:.4f}V)")
         return state
 
     def initialize_forge_ready(self):
@@ -265,11 +267,12 @@ class DPDDebugger:
         time.sleep(0.05)
         self.set_control(1, 0x00000001, "sw_trigger=0 (edge detected), arm_enable=1")
 
-        # Watch state transitions (FIRING → COOLING → DONE)
+        # Watch state transitions (FIRING → COOLING, then back to IDLE)
         logger.info("\n   Watching state transitions...")
         self.wait_and_check_state("FIRING", timeout=0.5)
         self.wait_and_check_state("COOLING", timeout=(intensity_us / 1000.0) + 0.5)
-        self.wait_and_check_state("DONE", timeout=(cooling_us / 1000.0) + 0.5)
+        # After cooling, FSM returns to IDLE (no DONE state in DPD)
+        logger.info("   (FSM will return to IDLE after cooldown)")
 
     def run_state_machine_demo(self):
         """Run complete state machine demonstration."""
