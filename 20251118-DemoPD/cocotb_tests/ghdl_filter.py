@@ -37,6 +37,7 @@ class FilterStats:
     total_lines: int = 0
     filtered_lines: int = 0
     metavalue_warnings: int = 0
+    truncated_warnings: int = 0
     null_warnings: int = 0
     initialization_warnings: int = 0
     duplicate_warnings: int = 0
@@ -55,11 +56,21 @@ class GHDLOutputFilter:
     """
 
     # Patterns for metavalue-related warnings (highest priority to filter)
+    # NOTE: Patterns match both raw GHDL output AND CocoTB-wrapped output
     METAVALUE_PATTERNS = [
         r".*NUMERIC_STD\.[A-Z_]+: metavalue detected.*",
         r".*metavalue detected, returning.*",
         r".*\(assertion warning\): NUMERIC_STD.*metavalue.*",
         r".*STD_LOGIC_.*: metavalue detected.*",
+        r".*INFO cocotb:.*NUMERIC_STD\.[A-Z_]+: metavalue detected.*",
+        r".*INFO cocotb:.*metavalue detected.*",
+    ]
+
+    # Patterns for vector truncation warnings (MASSIVE volume)
+    TRUNCATED_PATTERNS = [
+        r".*NUMERIC_STD\.TO_SIGNED: vector truncated.*",
+        r".*NUMERIC_STD\.TO_UNSIGNED: vector truncated.*",
+        r".*INFO cocotb:.*vector truncated.*",
     ]
 
     # Patterns for null/uninitialized warnings
@@ -67,6 +78,7 @@ class GHDLOutputFilter:
         r".*NUMERIC_STD\.[A-Z_]+: null argument detected.*",
         r".*null argument detected, returning.*",
         r".*\(assertion warning\): NUMERIC_STD.*null.*",
+        r".*INFO cocotb:.*null argument detected.*",
     ]
 
     # Patterns for initialization warnings (typically at time 0)
@@ -98,6 +110,12 @@ class GHDLOutputFilter:
         r"^={3,}.*",  # Separator lines
         r".*✓.*",  # Success marks
         r".*✗.*",  # Failure marks
+        r".*INFO cocotb:.*P[0-9]+.*TESTS.*",  # Test level headers
+        r".*INFO cocotb:.*T[0-9]+:.*",  # Test case headers (T1:, T2:, etc)
+        r".*cocotb\.customwrapper.*",  # Custom wrapper test output
+        r".*Clock started.*",  # Setup messages
+        r".*Reset complete.*",  # Setup messages
+        r".*FORGE control.*",  # Important test steps
     ]
 
     def __init__(self, level: FilterLevel = FilterLevel.NORMAL):
@@ -113,6 +131,7 @@ class GHDLOutputFilter:
 
         # Compile regex patterns for efficiency
         self.metavalue_re = [re.compile(p, re.IGNORECASE) for p in self.METAVALUE_PATTERNS]
+        self.truncated_re = [re.compile(p, re.IGNORECASE) for p in self.TRUNCATED_PATTERNS]
         self.null_re = [re.compile(p, re.IGNORECASE) for p in self.NULL_PATTERNS]
         self.init_re = [re.compile(p, re.IGNORECASE) for p in self.INIT_PATTERNS]
         self.internal_re = [re.compile(p, re.IGNORECASE) for p in self.GHDL_INTERNAL_PATTERNS]
@@ -151,6 +170,9 @@ class GHDLOutputFilter:
         # Apply level-based filtering
         if self.level == FilterLevel.AGGRESSIVE:
             # Filter everything we can
+            if self.is_truncated_warning(line):
+                self.stats.truncated_warnings += 1
+                return True
             if self.is_metavalue_warning(line):
                 self.stats.metavalue_warnings += 1
                 return True
@@ -165,6 +187,9 @@ class GHDLOutputFilter:
 
         elif self.level == FilterLevel.NORMAL:
             # Filter most noise but keep some warnings
+            if self.is_truncated_warning(line):
+                self.stats.truncated_warnings += 1
+                return True
             if self.is_metavalue_warning(line):
                 self.stats.metavalue_warnings += 1
                 return True
@@ -176,7 +201,10 @@ class GHDLOutputFilter:
                 return True
 
         elif self.level == FilterLevel.MINIMAL:
-            # Only filter the worst offenders
+            # Only filter the worst offenders (truncated warnings are so noisy we always filter)
+            if self.is_truncated_warning(line):
+                self.stats.truncated_warnings += 1
+                return True
             if self.is_metavalue_warning(line):
                 # Keep first occurrence, filter repeats
                 if self.stats.metavalue_warnings > 0:
@@ -189,6 +217,10 @@ class GHDLOutputFilter:
     def is_metavalue_warning(self, line: str) -> bool:
         """Check if line is a metavalue warning"""
         return any(regex.search(line) for regex in self.metavalue_re)
+
+    def is_truncated_warning(self, line: str) -> bool:
+        """Check if line is a vector truncated warning"""
+        return any(regex.search(line) for regex in self.truncated_re)
 
     def is_null_warning(self, line: str) -> bool:
         """Check if line is a null/uninitialized warning"""
@@ -292,6 +324,8 @@ class GHDLOutputFilter:
         output_stream.write(f"  Total lines: {self.stats.total_lines}\n")
         output_stream.write(f"  Filtered: {self.stats.filtered_lines} ({reduction_pct:.1f}% reduction)\n")
 
+        if self.stats.truncated_warnings > 0:
+            output_stream.write(f"  - Vector truncated warnings: {self.stats.truncated_warnings}\n")
         if self.stats.metavalue_warnings > 0:
             output_stream.write(f"  - Metavalue warnings: {self.stats.metavalue_warnings}\n")
         if self.stats.null_warnings > 0:
