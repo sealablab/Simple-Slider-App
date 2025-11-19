@@ -76,19 +76,19 @@ logger.add(
 
 # FSM State Decoding (from OutputC via oscilloscope)
 # Based on HVS (Hierarchical Voltage Scaling) encoding
-# Encoding: 200 digital units per state step
+# Encoding: 3277 digital units per state step (0.5V per state @ ±5V full scale)
 # Voltage = (digital_units / 32768) * 5V
 # Note: DPD only has 4 states (no DONE state exists in hardware)
 STATE_MAP = {
-    "IDLE":      0.0000,   # State 0: 0 digital units → 0.000V
-    "ARMED":     0.0305,   # State 1: 200 digital units → 30.5mV
-    "FIRING":    0.0610,   # State 2: 400 digital units → 61.0mV
-    "COOLING":   0.0916,   # State 3: 600 digital units → 91.6mV
-    "FAULT":     -0.100,   # Negative voltage = fault condition (any negative)
+    "IDLE":      0.0,    # State 0: 0 digital units → 0.0V
+    "ARMED":     0.5,    # State 1: 3277 digital units → 0.5V
+    "FIRING":    1.0,    # State 2: 6554 digital units → 1.0V
+    "COOLING":   1.5,    # State 3: 9831 digital units → 1.5V
+    "FAULT":     -0.5,   # Negative voltage = fault condition
 }
 
 # Reverse lookup with tolerance
-def decode_fsm_state(voltage: float, tolerance: float = 0.020) -> Optional[str]:
+def decode_fsm_state(voltage: float, tolerance: float = 0.15) -> Optional[str]:
     """Decode FSM state from oscilloscope voltage reading."""
     for state, expected_v in STATE_MAP.items():
         if abs(voltage - expected_v) < tolerance:
@@ -179,10 +179,10 @@ class DPDDebugger:
             state, voltage = self.read_fsm_state(poll_count=3)
 
             if expected_state and state == expected_state:
-                logger.success(f"✅ State: {state} ({voltage:.4f}V)")
+                logger.success(f"✅ State: {state} ({voltage:.2f}V)")
                 return state
             elif not expected_state:
-                logger.info(f"📊 State: {state} ({voltage:.4f}V)")
+                logger.info(f"📊 State: {state} ({voltage:.2f}V)")
                 return state
 
             time.sleep(0.1)
@@ -190,7 +190,7 @@ class DPDDebugger:
         # Timeout
         state, voltage = self.read_fsm_state(poll_count=3)
         if expected_state:
-            logger.warning(f"⚠️  Timeout waiting for {expected_state}, got {state} ({voltage:.4f}V)")
+            logger.warning(f"⚠️  Timeout waiting for {expected_state}, got {state} ({voltage:.2f}V)")
         return state
 
     def initialize_forge_ready(self):

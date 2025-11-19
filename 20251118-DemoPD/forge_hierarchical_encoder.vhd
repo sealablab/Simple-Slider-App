@@ -59,7 +59,9 @@ entity forge_hierarchical_encoder is
         -- Digital scaling parameters (platform-agnostic)
         -- These are NOT voltages! They are digital units.
         -- Voltage interpretation depends on platform DAC configuration.
-        DIGITAL_UNITS_PER_STATE  : integer := 200;      -- Digital units per state step
+        -- UPDATED 2025-01-18: Increased from 200 to 3277 for human-readable scope viewing
+        -- 3277 digital units = 0.5V per state step @ ±5V full scale (Moku:Go)
+        DIGITAL_UNITS_PER_STATE  : integer := 3277;     -- Digital units per state step (~0.5V @ ±5V FS)
         DIGITAL_UNITS_PER_STATUS : real    := 0.78125   -- Digital units per status LSB (100/128)
     );
     port (

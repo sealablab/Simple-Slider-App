@@ -8,8 +8,9 @@ Starting from all registers = 0, this checklist provides a step-by-step sequence
 ## Prerequisites
 - Moku:Go connected and accessible
 - DPD bitstream loaded in slot 2
-- Oscilloscope monitoring outputs (or external scope on Output1/Output2)
-- OutputC routed to oscilloscope for FSM state monitoring
+- Oscilloscope or external scope connected to Output1 (FSM debug signal)
+- **Scope settings:** Set to 500mV/div or 1V/div range, DC coupling
+- **Expected voltages:** IDLE(0V), ARMED(0.5V), FIRING(1.0V), COOLING(1.5V)
 
 ---
 
@@ -188,20 +189,18 @@ cc.set_control(1, 0x00000003)  # CR1[1:0] = 0b11 (sw_trigger + arm_enable)
 
 **Expected behavior (happens VERY fast, within ~300μs):**
 1. FSM: ARMED → FIRING
-2. OutputA: Goes to 2.0V for 100μs (trigger pulse)
-3. OutputB: Goes to 3.0V for 200μs (intensity pulse)
-4. FSM: FIRING → COOLING (for 10μs)
-5. FSM: COOLING → DONE
-6. OutputC transitions: 0.5V → 1.0V → 1.5V → 2.0V
+2. OutputB: Goes to 3.0V for 200μs (intensity pulse on Output2)
+3. FSM: FIRING → COOLING (for 10μs)
+4. FSM: COOLING → IDLE (completes cycle)
+5. OutputC transitions: 0.5V → 1.0V → 1.5V → 0.0V (returns to IDLE)
 
 **Observable outputs (if you catch them!):**
-- OutputA: 2.0V pulse for 100μs
-- OutputB: 3.0V pulse for 200μs
-- OutputC: Final state ~2.0V (DONE)
+- OutputB (on Output2): 3.0V pulse for 200μs
+- OutputC (on Output1): Voltage transitions through states, settles at 0.0V (IDLE)
 
 **✅ SUCCESS CRITERIA:**
-- OutputC settles at ~2.0V (DONE state)
-- If you have a scope with edge trigger, catch the pulses on OutputA/OutputB
+- OutputC settles at ~0.0V (IDLE state after completing fire cycle)
+- If you have a scope with edge trigger, catch the pulse on Output2 (OutputB intensity)
 
 ---
 

@@ -51,27 +51,27 @@ def decode_state(voltage: float) -> str:
     """
     Decode FSM state from voltage reading.
 
-    HVS Encoding: 200 digital units per state step
+    HVS Encoding: 3277 digital units per state step (0.5V per state)
     Voltage = (digital_units / 32768) * 5V
     State voltages:
-      - IDLE (0):      0 units    → 0.000V
-      - ARMED (1):     200 units  → 0.0305V (~30.5mV)
-      - FIRING (2):    400 units  → 0.0610V (~61mV)
-      - COOLDOWN (3):  600 units  → 0.0916V (~92mV)
+      - IDLE (0):      0 units    → 0.0V
+      - ARMED (1):     3277 units → 0.5V
+      - FIRING (2):    6554 units → 1.0V
+      - COOLDOWN (3):  9831 units → 1.5V
       - FAULT:         negative voltage
     """
-    if abs(voltage - 0.000) < 0.020:  # ±20mV tolerance
+    if abs(voltage - 0.0) < 0.15:  # ±150mV tolerance
         return "IDLE"
-    elif abs(voltage - 0.0305) < 0.020:
+    elif abs(voltage - 0.5) < 0.15:
         return "ARMED"
-    elif abs(voltage - 0.0610) < 0.020:
+    elif abs(voltage - 1.0) < 0.15:
         return "FIRING"
-    elif abs(voltage - 0.0916) < 0.020:
+    elif abs(voltage - 1.5) < 0.15:
         return "COOLDOWN"
-    elif voltage < -0.020:  # Any negative voltage = fault
+    elif voltage < -0.15:  # Any negative voltage = fault
         return "FAULT"
     else:
-        return f"UNKNOWN({voltage:.4f}V)"
+        return f"UNKNOWN({voltage:.3f}V)"
 
 
 def main():
