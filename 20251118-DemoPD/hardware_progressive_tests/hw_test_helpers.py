@@ -256,9 +256,15 @@ def clear_fault(mcc):
     time.sleep(0.1)
 
 
-def reset_fsm_to_idle(mcc, osc, timeout_ms: float = 1000) -> bool:
+def reset_fsm_to_idle(mcc, osc, timeout_ms: float = 2000) -> bool:
     """
     Reset FSM to IDLE state by clearing application control registers.
+
+    Strategy:
+    1. Enable FORGE control (global_enable=1) to allow FSM transitions
+    2. Wait for undefined states (e.g. STATE_4) to auto-transition to FAULT
+    3. Clear fault to transition FAULT → IDLE
+    4. Clear all application registers
 
     CRITICAL: We must keep FORGE control (CR0) enabled throughout reset,
     otherwise the FSM cannot transition (global_enable=0 blocks FSM state changes).
@@ -266,26 +272,47 @@ def reset_fsm_to_idle(mcc, osc, timeout_ms: float = 1000) -> bool:
     Args:
         mcc: CloudCompile instrument instance
         osc: Oscilloscope instrument instance
-        timeout_ms: Timeout to wait for IDLE state
+        timeout_ms: Timeout to wait for IDLE state (default: 2000ms)
 
     Returns:
         True if FSM reached IDLE, False on timeout
     """
-    # Ensure FORGE control is enabled FIRST (before clearing other registers)
+    # Step 1: Ensure FORGE control is enabled (allows FSM transitions)
     init_forge_ready(mcc)
-    time.sleep(0.05)
+    time.sleep(0.1)
 
-    # Clear application control registers (CR1-CR15), but NOT CR0 (FORGE control)
+    # Step 2: Read current state
+    current_state, voltage = read_fsm_state(osc, poll_count=5)
+
+    # Step 3: If in undefined state (STATE_4) or FAULT, wait for auto-transition to FAULT
+    if current_state in ["STATE_4", "UNKNOWN", "FAULT"] or current_state.startswith("UNKNOWN"):
+        # FSM should auto-transition undefined states → FAULT via "when others"
+        # Give it time to transition with global_enable=1
+        time.sleep(0.3)
+
+        # Step 4: Clear fault to transition FAULT → IDLE
+        clear_fault(mcc)
+        time.sleep(0.2)
+
+    # Step 5: Clear all application control registers (CR1-CR15), but NOT CR0 (FORGE control)
     for i in range(1, 16):
         try:
             mcc.set_control(i, 0)
         except:
             pass  # Some registers may not exist
 
-    time.sleep(0.2)  # Give FSM time to settle to IDLE with FORGE enabled
+    time.sleep(0.2)
 
-    # Wait for IDLE state
-    return wait_for_state(osc, "IDLE", timeout_ms=timeout_ms)
+    # Step 6: Wait for IDLE state
+    success = wait_for_state(osc, "IDLE", timeout_ms=timeout_ms)
+
+    # Step 7: If still not IDLE, try fault clear one more time
+    if not success:
+        clear_fault(mcc)
+        time.sleep(0.2)
+        success = wait_for_state(osc, "IDLE", timeout_ms=500)
+
+    return success
 
 
 def validate_routing(moku, osc_slot: int = 1, cc_slot: int = 2) -> bool:
