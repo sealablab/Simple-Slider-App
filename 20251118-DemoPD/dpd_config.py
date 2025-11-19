@@ -73,17 +73,17 @@ class DPDConfig:
             if not (0 <= value <= 0xFFFFFFFF):
                 raise ValueError(f"{field} = {value} exceeds 32-bit unsigned range (0 to 4294967295)")
 
-    def to_control_regs_dict(self) -> Dict[int, int]:
+    def to_control_regs_list(self) -> list:
         """
-        Convert configuration to control register dictionary.
+        Convert configuration to control register list for CloudCompile API.
 
         Returns:
-            Dictionary mapping register indices (1-10) to 32-bit values,
+            List of control maps (dicts with 'id' and 'value' keys),
             suitable for passing to CloudCompile.set_controls()
 
         Example:
             >>> config = DPDConfig(arm_enable=True, trig_out_voltage=1000)
-            >>> regs = config.to_control_regs_dict()
+            >>> regs = config.to_control_regs_list()
             >>> cloud_compile.set_controls(regs)
         """
         # CR1: Lifecycle control bits [3:0]
@@ -126,18 +126,20 @@ class DPDConfig:
         # CR10: Monitor window duration (32-bit unsigned)
         cr10 = self.monitor_window_duration & 0xFFFFFFFF
 
-        return {
-            1: cr1,
-            2: cr2,
-            3: cr3,
-            4: cr4,
-            5: cr5,
-            6: cr6,
-            7: cr7,
-            8: cr8,
-            9: cr9,
-            10: cr10
-        }
+        # Return as list of control maps for CloudCompile.set_controls()
+        # CR0 is reserved, so app registers CR1-CR10 map to API id 1-10
+        return [
+            {"id": 1, "value": cr1},
+            {"id": 2, "value": cr2},
+            {"id": 3, "value": cr3},
+            {"id": 4, "value": cr4},
+            {"id": 5, "value": cr5},
+            {"id": 6, "value": cr6},
+            {"id": 7, "value": cr7},
+            {"id": 8, "value": cr8},
+            {"id": 9, "value": cr9},
+            {"id": 10, "value": cr10},
+        ]
 
     def __str__(self) -> str:
         """
@@ -210,8 +212,9 @@ if __name__ == "__main__":
     print()
 
     print("=" * 60)
-    print("Control register dictionary for set_controls():")
+    print("Control register list for set_controls():")
     print()
-    regs = custom_config.to_control_regs_dict()
-    for reg_idx, value in regs.items():
-        print(f"  CR{reg_idx}: 0x{value:08X} ({value})")
+    regs = custom_config.to_control_regs_list()
+    for reg_map in regs:
+        value = reg_map["value"]
+        print(f"  CR{reg_map['id']} (id={reg_map['id']}): 0x{value:08X} ({value})")

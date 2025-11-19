@@ -41,7 +41,7 @@ Provides the `DPDConfig` dataclass for managing DPD control register state.
 - Direct integration with Moku CloudCompile API
 
 **Main Methods:**
-- `to_control_regs_dict()` - Convert to dictionary for `set_controls()`
+- `to_control_regs_list()` - Convert to list format for `set_controls()`
 - `__str__()` - Human-readable representation with time units
 
 ## Register Mapping (CR1-CR10)
@@ -91,7 +91,7 @@ config = DPDConfig(
 print(config)
 
 # Convert to control registers and send to device
-dpd.set_controls(config.to_control_regs_dict())
+dpd.set_controls(config.to_control_regs_list())
 ```
 
 ### IPython Interactive Example
@@ -115,7 +115,7 @@ config.trig_out_duration = ns_to_cycles(200)  # 200ns
 print(config)
 
 # Apply to device
-dpd.set_controls(config.to_control_regs_dict())
+dpd.set_controls(config.to_control_regs_list())
 
 # Verify settings were applied
 current_regs = dpd.get_controls()
@@ -144,7 +144,7 @@ class MyApplication:
 
     def apply_config(self):
         """Send current configuration to device."""
-        regs = self.config.to_control_regs_dict()
+        regs = self.config.to_control_regs_list()
         self.dpd.set_controls(regs)
         print(f"Applied configuration:\n{self.config}")
 
@@ -224,6 +224,7 @@ python dpd_config.py
 
 - All timing values are stored internally as clock cycles (FPGA native format)
 - Human-readable display uses appropriate time units (s, μs, ns)
-- The `to_control_regs_dict()` method handles all bit packing automatically
+- The `to_control_regs_list()` method handles all bit packing automatically
 - CR8 packing: bits [1:0] for control, bits [31:16] for threshold, bits [15:2] reserved
 - Voltage values are in millivolts to match Moku API conventions
+- CR0 is reserved; DPD app uses CR1-CR10 (API indices 1-10)

@@ -141,8 +141,8 @@ def set_controls_with_timeout(cc: CloudCompile, config: DPDConfig, iteration: in
     def set_controls_thread():
         """Run set_controls in a separate thread."""
         try:
-            regs_dict = config.to_control_regs_dict()
-            result[0] = cc.set_controls(regs_dict)
+            regs_list = config.to_control_regs_list()
+            result[0] = cc.set_controls(regs_list)
         except Exception as e:
             exception[0] = e
 
