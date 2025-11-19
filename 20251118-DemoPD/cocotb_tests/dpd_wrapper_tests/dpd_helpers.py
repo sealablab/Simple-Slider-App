@@ -36,7 +36,7 @@ def assert_state(dut, expected_digital: int, tolerance: int = HVS_DIGITAL_TOLERA
 
     Args:
         dut: Device Under Test
-        expected_digital: Expected digital value (0, 200, 400, 600)
+        expected_digital: Expected digital value (0, 3277, 6554, 9831 for states 0-3)
         tolerance: Allowed deviation (default: from constants)
         context: Optional context for error message
 
@@ -61,7 +61,7 @@ async def wait_for_state(dut, target_digital: int, timeout_us: int = 100,
 
     Args:
         dut: Device Under Test
-        target_digital: Target HVS digital value (0, 200, 400, 600)
+        target_digital: Target HVS digital value (0, 3277, 6554, 9831 for states 0-3)
         timeout_us: Timeout in microseconds (default: 100μs)
         tolerance: Allowed deviation from target (default: from constants)
 
