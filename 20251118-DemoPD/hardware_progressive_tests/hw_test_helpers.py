@@ -207,6 +207,11 @@ def arm_probe(mcc, trig_duration_us: float, intensity_duration_us: float,
     mcc.set_control(2, (trigger_threshold_mv << 16) | (trig_voltage_mv & 0xFFFF))  # CR2
     mcc.set_control(3, intensity_voltage_mv & 0xFFFF)  # CR3
 
+    # CRITICAL: Allow timing/voltage registers to propagate before enabling arm
+    # Network register updates are asynchronous - FSM must not see arm_enable=1
+    # before timing registers are valid, or it will try to arm with zero/undefined values
+    time.sleep(0.2)
+
     # Enable arming (CR1[0] = arm_enable)
     mcc.set_control(1, 0x00000001)
 
