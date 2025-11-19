@@ -81,11 +81,16 @@ class DPDConfig:
             List of control maps (dicts with 'id' and 'value' keys),
             suitable for passing to CloudCompile.set_controls()
 
+            Includes CR0 with FORGE_READY control bits [31:29] set high to enable module.
+
         Example:
             >>> config = DPDConfig(arm_enable=True, trig_out_voltage=1000)
             >>> regs = config.to_control_regs_list()
             >>> cloud_compile.set_controls(regs)
         """
+        # CR0: FORGE_READY control scheme
+        # Set bits [31:29] high: forge_ready=1, user_enable=1, clk_enable=1
+        cr0 = (1 << 31) | (1 << 30) | (1 << 29)
         # CR1: Lifecycle control bits [3:0]
         cr1 = (
             (1 if self.arm_enable else 0) |
@@ -127,8 +132,9 @@ class DPDConfig:
         cr10 = self.monitor_window_duration & 0xFFFFFFFF
 
         # Return as list of control maps for CloudCompile.set_controls()
-        # CR0 is reserved, so app registers CR1-CR10 map to API id 1-10
+        # CR0 included with FORGE_READY bits, then app registers CR1-CR10
         return [
+            {"id": 0, "value": cr0},
             {"id": 1, "value": cr1},
             {"id": 2, "value": cr2},
             {"id": 3, "value": cr3},

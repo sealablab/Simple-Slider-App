@@ -44,10 +44,12 @@ Provides the `DPDConfig` dataclass for managing DPD control register state.
 - `to_control_regs_list()` - Convert to list format for `set_controls()`
 - `__str__()` - Human-readable representation with time units
 
-## Register Mapping (CR1-CR10)
+## Register Mapping (CR0-CR10)
 
 | Register | Bits | Description | Units |
 |----------|------|-------------|-------|
+| CR0 | [31:29] | FORGE_READY control (auto-set: forge_ready, user_enable, clk_enable) | boolean |
+| CR0 | [28:0] | Reserved | - |
 | CR1 | [3:0] | Lifecycle control (arm_enable, ext_trigger_in, auto_rearm_enable, fault_clear) | boolean |
 | CR2 | [15:0] | Trigger output voltage | mV (signed 16-bit) |
 | CR3 | [15:0] | Intensity output voltage | mV (signed 16-bit) |
@@ -225,6 +227,6 @@ python dpd_config.py
 - All timing values are stored internally as clock cycles (FPGA native format)
 - Human-readable display uses appropriate time units (s, μs, ns)
 - The `to_control_regs_list()` method handles all bit packing automatically
+- CR0 is automatically included with FORGE_READY bits [31:29] set high to enable module
 - CR8 packing: bits [1:0] for control, bits [31:16] for threshold, bits [15:2] reserved
 - Voltage values are in millivolts to match Moku API conventions
-- CR0 is reserved; DPD app uses CR1-CR10 (API indices 1-10)
