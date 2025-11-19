@@ -14,11 +14,10 @@
 --
 -- Register Mapping:
 --   CR1[0]     : arm_enable - Arm FSM (IDLE → ARMED transition)
---   CR1[1]     : RESERVED (removed - no longer used)
+--   CR1[1]     : sw_trigger - Software trigger (edge-detected, ARMED → FIRING)
 --   CR1[2]     : auto_rearm_enable - Re-arm after cooldown
 --   CR1[3]     : fault_clear - Clear fault state (edge-detected)
---   CR1[4]     : sw_trigger - Software trigger (edge-detected, ARMED → FIRING)
---   CR1[31:5]  : Reserved
+--   CR1[31:4]  : Reserved
 --   CR2[31:16] : Input trigger voltage threshold (mV, signed)
 --   CR2[15:0]  : Trigger output voltage (mV)
 --   CR3[15:0]  : Intensity output voltage (mV)
@@ -203,10 +202,9 @@ begin
 
             -- CR1: Lifecycle control bits
             app_reg_arm_enable        <= app_reg_1(0);
-            -- CR1[1] RESERVED (removed)
+            app_reg_sw_trigger        <= app_reg_1(1);
             app_reg_auto_rearm_enable <= app_reg_1(2);
             app_reg_fault_clear       <= app_reg_1(3);
-            app_reg_sw_trigger        <= app_reg_1(4);
 
             -- Edge detection for software trigger
             sw_trigger_prev <= app_reg_sw_trigger;

@@ -36,7 +36,7 @@ class DPDConfig:
 
     # Lifecycle control (CR1)
     arm_enable: bool = False
-    ext_trigger_in: bool = False
+    sw_trigger: bool = False
     auto_rearm_enable: bool = False
     fault_clear: bool = False
 
@@ -98,7 +98,7 @@ class DPDConfig:
         # CR1: Lifecycle control bits [3:0]
         cr1 = (
             (1 if self.arm_enable else 0) |
-            ((1 if self.ext_trigger_in else 0) << 1) |
+            ((1 if self.sw_trigger else 0) << 1) |
             ((1 if self.auto_rearm_enable else 0) << 2) |
             ((1 if self.fault_clear else 0) << 3)
         )
@@ -165,7 +165,7 @@ class DPDConfig:
             "",
             "Lifecycle Control:",
             f"  arm_enable:         {self.arm_enable}",
-            f"  ext_trigger_in:     {self.ext_trigger_in}",
+            f"  sw_trigger:         {self.sw_trigger}",
             f"  auto_rearm_enable:  {self.auto_rearm_enable}",
             f"  fault_clear:        {self.fault_clear}",
             "",
