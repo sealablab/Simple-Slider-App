@@ -13,7 +13,12 @@
 --   Layer 3: DPD_main.vhd (hand-written app logic)
 --
 -- Register Mapping:
---   CR1[3:0]   : Lifecycle control (arm_enable, [reserved], auto_rearm, fault_clear)
+--   CR1[0]     : arm_enable - Arm FSM (IDLE → ARMED transition)
+--   CR1[1]     : RESERVED (removed - no longer used)
+--   CR1[2]     : auto_rearm_enable - Re-arm after cooldown
+--   CR1[3]     : fault_clear - Clear fault state (edge-detected)
+--   CR1[4]     : sw_trigger - Software trigger (edge-detected, ARMED → FIRING)
+--   CR1[31:5]  : Reserved
 --   CR2[31:16] : Input trigger voltage threshold (mV, signed)
 --   CR2[15:0]  : Trigger output voltage (mV)
 --   CR3[15:0]  : Intensity output voltage (mV)
@@ -99,7 +104,7 @@ architecture rtl of DPD_shim is
 
     -- Lifecycle control
     signal app_reg_arm_enable           : std_logic;  -- Arm FSM (IDLE→ARMED transition)
-    signal app_reg_ext_trigger_in       : std_logic;  -- External trigger input
+    signal app_reg_sw_trigger           : std_logic;  -- Software trigger input (CR1[4])
     signal app_reg_auto_rearm_enable    : std_logic;  -- Re-arm after cooldown
     signal app_reg_fault_clear          : std_logic;  -- Clear fault state
 
@@ -140,6 +145,13 @@ architecture rtl of DPD_shim is
     signal hw_trigger_crossing_count : unsigned(15 downto 0);  -- Diagnostic counter
 
     ----------------------------------------------------------------------------
+    -- Software Trigger Edge Detection
+    ----------------------------------------------------------------------------
+    signal sw_trigger_prev : std_logic;  -- Previous state for edge detection
+    signal sw_trigger_edge : std_logic;  -- Rising edge pulse (1 cycle)
+    signal combined_trigger : std_logic;  -- hw_trigger OR sw_trigger
+
+    ----------------------------------------------------------------------------
     -- Debug Signals (for HVS encoding)
     ----------------------------------------------------------------------------
     signal state_vector_from_main  : std_logic_vector(5 downto 0);
@@ -168,9 +180,10 @@ begin
         if Reset = '1' then
             -- Initialize all app_reg_* signals to safe defaults
             app_reg_arm_enable           <= '0';
-            app_reg_ext_trigger_in       <= '0';
+            app_reg_sw_trigger           <= '0';
             app_reg_auto_rearm_enable    <= '0';
             app_reg_fault_clear          <= '0';
+            sw_trigger_prev              <= '0';
             app_reg_input_trigger_threshold_high <= to_signed(950, 16);   -- Default 950mV
             app_reg_input_trigger_threshold_low  <= to_signed(900, 16);   -- Default 900mV (50mV hysteresis)
             app_reg_trig_out_voltage     <= (others => '0');
@@ -190,9 +203,13 @@ begin
 
             -- CR1: Lifecycle control bits
             app_reg_arm_enable        <= app_reg_1(0);
-            app_reg_ext_trigger_in    <= app_reg_1(1);
+            -- CR1[1] RESERVED (removed)
             app_reg_auto_rearm_enable <= app_reg_1(2);
             app_reg_fault_clear       <= app_reg_1(3);
+            app_reg_sw_trigger        <= app_reg_1(4);
+
+            -- Edge detection for software trigger
+            sw_trigger_prev <= app_reg_sw_trigger;
 
             -- CR2: Input trigger threshold [31:16] + Trigger output voltage [15:0]
             app_reg_input_trigger_threshold_high <= signed(app_reg_2(31 downto 16));
@@ -226,6 +243,20 @@ begin
             app_reg_monitor_window_duration <= unsigned(app_reg_10);
         end if;
     end process;
+
+    ----------------------------------------------------------------------------
+    -- Software Trigger Edge Detection (Combinational)
+    --
+    -- Converts CR1[4] level into 1-cycle pulse on rising edge
+    ----------------------------------------------------------------------------
+    sw_trigger_edge <= app_reg_sw_trigger and not sw_trigger_prev;
+
+    ----------------------------------------------------------------------------
+    -- Combined Trigger Logic
+    --
+    -- FSM accepts triggers from EITHER hardware comparator OR software register
+    ----------------------------------------------------------------------------
+    combined_trigger <= hw_trigger_out or sw_trigger_edge;
 
     ----------------------------------------------------------------------------
     -- Instantiate Hardware Trigger Core
@@ -265,7 +296,7 @@ begin
 
             -- Direct mapping: DPD_main ports ← app_reg_* signals
             arm_enable           => app_reg_arm_enable,
-            ext_trigger_in       => hw_trigger_out,  -- Hardware trigger from voltage comparator
+            ext_trigger_in       => combined_trigger,  -- Hardware OR software trigger
             trigger_wait_timeout => app_reg_trigger_wait_timeout,
             auto_rearm_enable    => app_reg_auto_rearm_enable,
             fault_clear          => app_reg_fault_clear,

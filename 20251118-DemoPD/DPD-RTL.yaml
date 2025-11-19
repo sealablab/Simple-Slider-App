@@ -14,7 +14,16 @@
 #   InputB  → Probe monitor feedback (ADC, ±5V)
 #   OutputA → Trigger output (DAC, ±5V)
 #   OutputB → Intensity output (DAC, ±5V)
-#   OutputC → FSM state debug (signed 16-bit)
+#   OutputC → FSM state debug (HVS encoding, signed 16-bit)
+#
+# Trigger Sources (ARMED → FIRING transition):
+#   1. Hardware trigger: InputA voltage crosses threshold (CR2[31:16])
+#      - Automatic, always active when FSM is ARMED
+#      - 50mV hysteresis prevents noise re-triggering
+#   2. Software trigger: CR1[4] edge detection (0→1)
+#      - Network-controllable via Control1 register
+#      - Auto-clears after 1-cycle pulse
+#      - Independent of hardware trigger (both work simultaneously)
 ###############################################################################
 
 app_name: demo_probe_driver
@@ -39,7 +48,7 @@ datatypes:
     control_register: CR1
     bit_range: "[0]"
 
-  # CR1[1] RESERVED - Previously ext_trigger_in, now driven by hardware voltage comparator
+  # CR1[1] RESERVED - Removed, no longer used
 
   - name: auto_rearm_enable
     datatype: std_logic
@@ -54,6 +63,18 @@ datatypes:
     default_value: false
     control_register: CR1
     bit_range: "[3]"
+
+  - name: sw_trigger
+    datatype: std_logic
+    description: |-
+      Software trigger for FSM (ARMED → FIRING transition).
+      Uses edge detection: rising edge (0→1) generates 1-cycle trigger pulse.
+      Auto-clears after edge is detected.
+      Works independently from hardware voltage trigger (InputA comparator).
+      Use case: Network-controlled triggering without external signal.
+    default_value: false
+    control_register: CR1
+    bit_range: "[4]"
 
   - name: trigger_wait_timeout
     datatype: unsigned_32
@@ -189,10 +210,11 @@ datatypes:
 # CR0[28:0]  - Unused
 #
 # CR1[0]     - arm_enable
-# CR1[1]     - RESERVED (hardware trigger driven by voltage comparator)
+# CR1[1]     - RESERVED (removed, no longer used)
 # CR1[2]     - auto_rearm_enable
-# CR1[3]     - fault_clear
-# CR1[31:4]  - Unused
+# CR1[3]     - fault_clear (edge-detected)
+# CR1[4]     - sw_trigger (edge-detected, software trigger)
+# CR1[31:5]  - Unused
 #
 # CR2[31:16] - input_trigger_voltage_threshold (mV, signed)
 # CR2[15:0]  - trig_out_voltage (mV, signed)
