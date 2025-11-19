@@ -133,18 +133,19 @@ class DPDConfig:
 
         # Return as list of control maps for CloudCompile.set_controls()
         # CR0 included with FORGE_READY bits, then app registers CR1-CR10
+        # NOTE: Key must be "idx" not "id" (discovered via diagnose_set_controls.py)
         return [
-            {"id": 0, "value": cr0},
-            {"id": 1, "value": cr1},
-            {"id": 2, "value": cr2},
-            {"id": 3, "value": cr3},
-            {"id": 4, "value": cr4},
-            {"id": 5, "value": cr5},
-            {"id": 6, "value": cr6},
-            {"id": 7, "value": cr7},
-            {"id": 8, "value": cr8},
-            {"id": 9, "value": cr9},
-            {"id": 10, "value": cr10},
+            {"idx": 0, "value": cr0},
+            {"idx": 1, "value": cr1},
+            {"idx": 2, "value": cr2},
+            {"idx": 3, "value": cr3},
+            {"idx": 4, "value": cr4},
+            {"idx": 5, "value": cr5},
+            {"idx": 6, "value": cr6},
+            {"idx": 7, "value": cr7},
+            {"idx": 8, "value": cr8},
+            {"idx": 9, "value": cr9},
+            {"idx": 10, "value": cr10},
         ]
 
     def __str__(self) -> str:
@@ -223,4 +224,5 @@ if __name__ == "__main__":
     regs = custom_config.to_control_regs_list()
     for reg_map in regs:
         value = reg_map["value"]
-        print(f"  CR{reg_map['id']} (id={reg_map['id']}): 0x{value:08X} ({value})")
+        idx = reg_map["idx"]
+        print(f"  CR{idx} (idx={idx}): 0x{value:08X} ({value})")

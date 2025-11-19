@@ -149,7 +149,7 @@ def fallback_set_controls_individually(cc: CloudCompile, controls: list) -> dict
 
     Args:
         cc: CloudCompile instance
-        controls: List of control maps [{"id": X, "value": Y}, ...]
+        controls: List of control maps [{"idx": X, "value": Y}, ...]
 
     Returns:
         Dictionary with results: {"success": bool, "details": {...}}
@@ -167,7 +167,7 @@ def fallback_set_controls_individually(cc: CloudCompile, controls: list) -> dict
     }
 
     for ctrl_map in controls:
-        idx = ctrl_map["id"]
+        idx = ctrl_map.get("idx", ctrl_map.get("id"))  # Support both keys
         value = ctrl_map["value"]
 
         logger.info(f"\nSetting CR{idx} = 0x{value:08X} ({value})")
