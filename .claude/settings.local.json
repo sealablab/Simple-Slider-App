@@ -15,7 +15,10 @@
       "Bash(python3:*)",
       "Bash(chmod:*)",
       "Bash(python moku_set.py:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(python run.py:*)",
+      "Bash(uv run:*)",
+      "Bash(git reset:*)"
     ],
     "deny": [],
     "ask": []

@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "20251118-DemoPD/prompts/Prompt-python-typing.md",
+                "file": "20251118-DemoPD/HVS.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Prompt-python-typing"
+              "title": "HVS"
             }
           }
         ]
@@ -142,13 +142,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "20251118-DemoPD/prompts/Prompt-python-typing.md",
+                "file": "20251118-DemoPD/HVS.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of Prompt-python-typing"
+              "title": "Outline of HVS"
             }
           }
         ],
@@ -170,32 +170,41 @@
   },
   "active": "51b823796219d3a1",
   "lastOpenFiles": [
-    "20251118-DemoPD/forge_hierarchical_encoder.o",
+    "20251118-DemoPD/DPD-bits.tar",
+    "jc_prompts/20251119/Register-gating-prompt.md",
+    "jc_prompts/20251119",
+    "20251118-DemoPD/DPD-bits.tar.gz",
+    "20251118-DemoPD/2602f9b_mokugo_4.0.3_2_bitstreams.tar",
+    "20251118-DemoPD/hardware_progressive_tests/__pycache__/P3_hw_comprehensive.cpython-312.pyc",
+    "20251118-DemoPD/hardware_progressive_tests/__pycache__/P2_hw_intermediate.cpython-312.pyc",
+    "20251118-DemoPD/hardware_progressive_tests/__pycache__/P1_hw_basic.cpython-312.pyc",
+    "20251118-DemoPD/hardware_progressive_tests/__pycache__/hw_test_constants.cpython-312.pyc",
+    "20251118-DemoPD/hardware_progressive_tests/__pycache__/hw_test_helpers.cpython-312.pyc",
+    "20251118-DemoPD/hardware_progressive_tests/__pycache__/hw_test_base.cpython-312.pyc",
+    "20251118-DemoPD/hardware_progressive_tests/QUICK_START.md",
+    "20251118-DemoPD/hardware_progressive_tests/__pycache__/hw_test_base.cpython-314.pyc",
+    "20251118-DemoPD/hardware_progressive_tests/README.md",
+    "20251118-DemoPD/cocotb_tests/HVS_UPDATE_SUMMARY.md",
+    "20251118-DemoPD/hardware_debug_checklist.md",
+    "basic-probe-driver/vhdl/proposed_cocotb_test/README.md",
+    "basic-probe-driver/vhdl/proposed_cocotb_test/FSM_OBSERVER_INTEGRATION.md",
+    "basic-probe-driver/vhdl/cocotb_test/README.md",
+    "basic-probe-driver/vhdl/FORGE_ARCHITECTURE.md",
+    "basic-probe-driver/VHDL_SERIALIZATION_MIGRATION.md",
+    "basic-probe-driver/README.md",
+    "MIM_Hierarchy/Extracted_Hierarchy_README.md",
+    "20251118-DemoPD/prompts/Prompt-python-typing.md",
+    "20251118-DemoPD/cocotb_tests/dpd-testing-README.md",
+    "20251118-DemoPD/cocotb_tests/README.md",
+    "20251118-DemoPD/cocotb_tests/QUICK_START_FILTER.md",
+    "20251118-DemoPD/cocotb_tests/GHDL_FILTER_README.md",
+    "20251118-DemoPD/dpd-testing-README.md",
     "20251118-DemoPD/HVS.md",
     "HVS.md",
-    "20251118-DemoPD/forge_hierarchical_encoder.vhd",
-    "20251118-DemoPD/fsm_observer.vhd",
-    "20251118-DemoPD/DPD-RTL.yaml",
-    "DPD-RTL.yaml",
-    "BPD-RTL.yaml",
-    "20251118-DemoPD/moku_voltage_threshold_trigger_core.o",
-    "20251118-DemoPD/moku_voltage_threshold_trigger_core.vhd.tmp.56253.1763515206014",
-    "20251118-DemoPD/moku_voltage_threshold_trigger_core.vhd",
-    "20251118-DemoPD/debuglog3.txt",
-    "debuglog3.txt",
     "20251118-DemoPD/dpd_utils_README.md",
-    "20251118-DemoPD/prompts/Prompt-python-typing.md",
     "moku/instruments/cloudcompile.md",
-    "MIM_Hierarchy/Extracted_Hierarchy_README.md",
     "example_configs/README.md",
     "example_configs/2025-11-17_oscilloscope_cloudcompile/README.md",
-    "example_configs/2025-11-17_oscilloscope_cloudcompile/MIM_Hierarchy/Extracted_Hierarchy_README.md",
-    "moku/ARCHITECTURE.md",
-    "moku/README.md",
-    "moku/instruments/mim.md",
-    "moku/session.md",
-    "P2.md",
-    "Untitled.md",
-    "jc_prompts/P1.md"
+    "example_configs/2025-11-17_oscilloscope_cloudcompile/MIM_Hierarchy/Extracted_Hierarchy_README.md"
   ]
 }

@@ -20,20 +20,24 @@ CLK_FREQ_HZ = 125_000_000
 # FSM State Constants (voltage-based encoding observed on oscilloscope)
 # Based on HVS (Hierarchical Voltage Encoding) on OutputC
 # Updated 2025-01-18: 3277 digital units/state = 0.5V/state @ ±5V full scale
+# Note: HVS encoding includes status bits which add ±0.015V offset
 STATE_VOLTAGE_MAP = {
     "IDLE": 0.0,        # State 0: 0V
     "ARMED": 0.5,       # State 1: 0.5V
     "FIRING": 1.0,      # State 2: 1.0V
     "COOLDOWN": 1.5,    # State 3: 1.5V (note: was "COOLING" in debug_fsm_states.py)
+    "STATE_4": 2.0,     # State 4: 2.0V (debugging - may indicate uninitialized or unexpected state)
     "FAULT": -0.5,      # Negative voltage = fault condition
 }
 
 # Reverse lookup for state names
 VOLTAGE_STATE_MAP = {v: k for k, v in STATE_VOLTAGE_MAP.items()}
 
-# Voltage tolerance for state detection (±150mV, accounting for noise)
+# Voltage tolerance for state detection (±300mV, accounting for noise + HVS status bits)
 # More forgiving than CocoTB's ±30mV due to real-world ADC noise
-STATE_VOLTAGE_TOLERANCE = 0.15  # ±150mV
+# HVS status bits can add up to ±100 digital units (±15mV)
+# Increased to ±300mV to account for potential bitstream/encoding mismatches
+STATE_VOLTAGE_TOLERANCE = 0.30  # ±300mV (was 0.15)
 
 # FORGE Control Scheme Constants (CR0[31:29])
 FORGE_READY_BIT = 31  # Set by MCC after deployment

@@ -92,7 +92,16 @@ class P1_HardwareBasicTests(HardwareTestBase):
         self.init_forge()
 
         # Verify CR0 was set
-        cr0_value = self.mcc.get_control(0)
+        cr0_result = self.mcc.get_control(0)
+
+        # Handle different return types (may be int, dict, or list)
+        if isinstance(cr0_result, list):
+            cr0_value = cr0_result[0] if cr0_result else 0
+        elif isinstance(cr0_result, dict):
+            cr0_value = cr0_result.get('value', cr0_result.get('id', 0))
+        else:
+            cr0_value = cr0_result
+
         self.log(f"CR0 = 0x{cr0_value:08X}", VerbosityLevel.VERBOSE)
 
         assert (cr0_value & 0xE0000000) == MCC_CR0_ALL_ENABLED, \
