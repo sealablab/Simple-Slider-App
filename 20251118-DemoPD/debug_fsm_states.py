@@ -64,6 +64,11 @@ except ImportError:
 # Import shared CLI utilities
 from moku_cli_common import connect_to_device, time_operation, setup_moku_debug_logging, parse_platform_id
 
+# Add parent directory to path for clk_utils import
+DPD_DIR = Path(__file__).parent
+sys.path.insert(0, str(DPD_DIR))
+from clk_utils import set_slow_mode, get_slow_mode
+
 # Configure loguru with nice formatting
 logger.remove()  # Remove default handler
 logger.add(
@@ -388,11 +393,22 @@ Examples:
         metavar='FILE',
         help='Enable debug logging for Moku library. Optionally specify output file (default: stderr)'
     )
+    parser.add_argument(
+        '--slow',
+        type=int,
+        metavar='FACTOR',
+        help='Slow mode: Scale all timing by FACTOR (e.g., 1000 = 1000x slower for human observation). WARNING: Debug only!'
+    )
 
     args = parser.parse_args()
 
     # Enable Moku debug logging if requested
     setup_moku_debug_logging(args)
+
+    # Enable slow mode if requested
+    if args.slow:
+        set_slow_mode(args.slow)
+        logger.warning(f"⚠️  SLOW MODE: All timing scaled by {args.slow}x (DEBUG ONLY - NOT for real probes!)")
 
     # Parse platform ID from name
     platform_id = parse_platform_id(args)
