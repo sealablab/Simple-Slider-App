@@ -134,7 +134,8 @@ end architecture bpd_forge;
 --
 -- 2. Application Register Mapping (CR1-CR10):
 --
---    CR1[3:0]   : Lifecycle control (arm_enable, ext_trigger_in, auto_rearm, fault_clear)
+--    CR1[3:0]   : Lifecycle control (arm_enable, [reserved], auto_rearm, fault_clear)
+--    CR2[31:16] : Input trigger voltage threshold (mV, signed, 50mV hysteresis)
 --    CR2[15:0]  : Trigger output voltage (mV)
 --    CR3[15:0]  : Intensity output voltage (mV)
 --    CR4[31:0]  : Trigger pulse duration (clock cycles)
@@ -152,24 +153,11 @@ end architecture bpd_forge;
 --
 -- 3. MCC I/O Mapping:
 --
---    InputA  → probe_monitor_feedback (ADC, ±5V)
---    InputB  → (unused)
+--    InputA  → External trigger input (ADC, ±5V)
+--    InputB  → Probe monitor feedback (ADC, ±5V)
 --    OutputA → Trigger output (DAC, ±5V)
 --    OutputB → Intensity output (DAC, ±5V)
---    OutputC → (reserved)
---    OutputD → Hierarchical voltage encoding (FSM state + app status, debugging)
---
--- 4. Hierarchical Voltage Encoding (OutputD):
---
---    NEW (Handoff 6): OutputD driven by SHIM layer with hierarchical encoder
---    - Encodes 14 bits: 6-bit FSM state + 8-bit app status
---    - Major transitions: 200 digital units per state (human-readable on scope)
---    - Status information: Fine-grained offset (machine-decodable)
---    - Fault detection: Negative voltage (status[7] = fault flag)
---    - Replaces: fsm_observer.vhd LUT-based pattern
---    - Benefits: Zero LUTs, 14-bit density, single bitstream dev/prod
---
---    Reference: Obsidian/Project/Handoffs/2025-11-07-handoff-6-hierarchical-voltage-encoding.md
+--    OutputC → FSM state debug (signed 16-bit)
 --
 --------------------------------------------------------------------------------
 

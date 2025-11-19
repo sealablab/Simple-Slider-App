@@ -1,0 +1,7 @@
+# GHDL build artifacts
+*.o
+work-obj93.cf
+*.cf
+
+# Claude local settings
+.claude/settings.local.json

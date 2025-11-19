@@ -13,7 +13,8 @@
 --   Layer 3: DPD_main.vhd (hand-written app logic)
 --
 -- Register Mapping:
---   CR1[3:0]   : Lifecycle control (arm_enable, ext_trigger_in, auto_rearm, fault_clear)
+--   CR1[3:0]   : Lifecycle control (arm_enable, [reserved], auto_rearm, fault_clear)
+--   CR2[31:16] : Input trigger voltage threshold (mV, signed)
 --   CR2[15:0]  : Trigger output voltage (mV)
 --   CR3[15:0]  : Intensity output voltage (mV)
 --   CR4[31:0]  : Trigger pulse duration (clock cycles)
@@ -85,8 +86,7 @@ entity DPD_shim is
         InputB      : in  signed(15 downto 0);
         OutputA     : out signed(15 downto 0);
         OutputB     : out signed(15 downto 0);
-        OutputC     : out signed(15 downto 0);
-        OutputD     : out signed(15 downto 0)
+        OutputC     : out signed(15 downto 0)
     );
 end entity DPD_shim;
 
@@ -102,6 +102,10 @@ architecture rtl of DPD_shim is
     signal app_reg_ext_trigger_in       : std_logic;  -- External trigger input
     signal app_reg_auto_rearm_enable    : std_logic;  -- Re-arm after cooldown
     signal app_reg_fault_clear          : std_logic;  -- Clear fault state
+
+    -- Input trigger control
+    signal app_reg_input_trigger_threshold_high : signed(15 downto 0);  -- Threshold high (mV)
+    signal app_reg_input_trigger_threshold_low  : signed(15 downto 0);  -- Threshold low (mV, -50mV hysteresis)
 
     -- Trigger output control
     signal app_reg_trig_out_voltage     : signed(15 downto 0);    -- Voltage (mV)
@@ -127,6 +131,13 @@ architecture rtl of DPD_shim is
     -- Combines all FORGE_READY control bits for safe operation
     ----------------------------------------------------------------------------
     signal global_enable : std_logic;
+
+    ----------------------------------------------------------------------------
+    -- Hardware Trigger Signals
+    ----------------------------------------------------------------------------
+    signal hw_trigger_out : std_logic;  -- Pulse from voltage threshold trigger
+    signal hw_trigger_above_threshold : std_logic;  -- Level indicator
+    signal hw_trigger_crossing_count : unsigned(15 downto 0);  -- Diagnostic counter
 
 begin
 
@@ -154,6 +165,8 @@ begin
             app_reg_ext_trigger_in       <= '0';
             app_reg_auto_rearm_enable    <= '0';
             app_reg_fault_clear          <= '0';
+            app_reg_input_trigger_threshold_high <= to_signed(950, 16);   -- Default 950mV
+            app_reg_input_trigger_threshold_low  <= to_signed(900, 16);   -- Default 900mV (50mV hysteresis)
             app_reg_trig_out_voltage     <= (others => '0');
             app_reg_trig_out_duration    <= to_unsigned(12500, 32);    -- Safe default 100ns @ 125MHz
             app_reg_intensity_voltage    <= (others => '0');
@@ -175,7 +188,9 @@ begin
             app_reg_auto_rearm_enable <= app_reg_1(2);
             app_reg_fault_clear       <= app_reg_1(3);
 
-            -- CR2: Trigger output voltage
+            -- CR2: Input trigger threshold [31:16] + Trigger output voltage [15:0]
+            app_reg_input_trigger_threshold_high <= signed(app_reg_2(31 downto 16));
+            app_reg_input_trigger_threshold_low  <= signed(app_reg_2(31 downto 16)) - to_signed(50, 16);  -- 50mV hysteresis
             app_reg_trig_out_voltage  <= signed(app_reg_2(15 downto 0));
 
             -- CR3: Intensity output voltage
@@ -207,6 +222,25 @@ begin
     end process;
 
     ----------------------------------------------------------------------------
+    -- Instantiate Hardware Trigger Core
+    --
+    -- Generates 1-cycle pulse when InputA crosses voltage threshold
+    ----------------------------------------------------------------------------
+    HW_TRIGGER_INST: entity WORK.moku_voltage_threshold_trigger_core
+        port map (
+            clk              => Clk,
+            reset            => Reset,
+            voltage_in       => InputA,
+            threshold_high   => app_reg_input_trigger_threshold_high,
+            threshold_low    => app_reg_input_trigger_threshold_low,
+            enable           => global_enable,
+            mode             => '0',  -- Rising edge mode
+            trigger_out      => hw_trigger_out,
+            above_threshold  => hw_trigger_above_threshold,
+            crossing_count   => hw_trigger_crossing_count
+        );
+
+    ----------------------------------------------------------------------------
     -- Instantiate Application Main Entity
     --
     -- Direct mapping: app_reg_* signals to DPD_main ports
@@ -225,7 +259,7 @@ begin
 
             -- Direct mapping: DPD_main ports ← app_reg_* signals
             arm_enable           => app_reg_arm_enable,
-            ext_trigger_in       => app_reg_ext_trigger_in,
+            ext_trigger_in       => hw_trigger_out,  -- Hardware trigger from voltage comparator
             trigger_wait_timeout => app_reg_trigger_wait_timeout,
             auto_rearm_enable    => app_reg_auto_rearm_enable,
             fault_clear          => app_reg_fault_clear,
@@ -238,7 +272,7 @@ begin
 
             cooldown_interval    => app_reg_cooldown_interval,
 
-            probe_monitor_feedback    => InputA,
+            probe_monitor_feedback    => InputB,
             monitor_enable            => app_reg_monitor_enable,
             monitor_threshold_voltage => app_reg_monitor_threshold_voltage,
             monitor_expect_negative   => app_reg_monitor_expect_negative,

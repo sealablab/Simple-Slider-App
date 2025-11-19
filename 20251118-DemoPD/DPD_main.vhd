@@ -134,8 +134,6 @@ architecture rtl of DPD_main is
     ----------------------------------------------------------------------------
     -- Control Flags
     ----------------------------------------------------------------------------
-    signal trig_out_active   : std_logic;  -- Trigger output pulse active
-    signal intensity_active  : std_logic;  -- Intensity output pulse active
     signal monitor_window_open : std_logic; -- Monitor window is active
     signal firing_complete   : std_logic;  -- Both pulses finished
     signal timeout_occurred  : std_logic;  -- Armed timeout exceeded
@@ -412,14 +410,6 @@ begin
             end if;
         end if;
     end process;
-
-    ------------------------------------------------------------------------
-    -- Output Control Flags (Concurrent)
-    --
-    -- These are used internally for FSM logic
-    ------------------------------------------------------------------------
-    trig_out_active <= '1' when state = STATE_FIRING else '0';
-    intensity_active <= '1' when state = STATE_FIRING else '0';
 
     ------------------------------------------------------------------------
     -- Status Flags (Combinational)

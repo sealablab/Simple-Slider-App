@@ -12,3 +12,8 @@ dependencies = [
     "textual-slider>=0.2.0",
     "loguru>=0.7.0",
 ]
+
+[dependency-groups]
+dev = [
+    "ipython>=9.7.0",
+]

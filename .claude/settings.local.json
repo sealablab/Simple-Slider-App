@@ -5,7 +5,17 @@
       "Bash(tree:*)",
       "Bash(mkdir:*)",
       "Bash(touch:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(ping:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(unzip:*)",
+      "Bash(cat:*)",
+      "Bash(xxd:*)",
+      "Bash(python3:*)",
+      "Bash(chmod:*)",
+      "Bash(python moku_set.py:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

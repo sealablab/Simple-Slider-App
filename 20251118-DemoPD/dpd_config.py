@@ -22,6 +22,7 @@ class DPDConfig:
 
     Register Mapping (CR1-CR10):
     - CR1[3:0]: Lifecycle control bits
+    - CR2[31:16]: input_trigger_voltage_threshold 
     - CR2[15:0]: Trigger output voltage (mV)
     - CR3[15:0]: Intensity output voltage (mV)
     - CR4[31:0]: Trigger pulse duration (clock cycles)
@@ -39,7 +40,10 @@ class DPDConfig:
     auto_rearm_enable: bool = False
     fault_clear: bool = False
 
-    # Trigger output control (CR2, CR4)
+    # Input trigger control (CR2[31:16])
+    input_trigger_voltage_threshold: int = 950  # mV, 16-bit signed (default: 0.95V)
+
+    # Trigger output control (CR2[15:0], CR4)
     trig_out_voltage: int = 0  # mV, 16-bit signed
     trig_out_duration: int = 12500  # clock cycles (default: 100μs @ 125MHz)
 
@@ -61,7 +65,7 @@ class DPDConfig:
     def __post_init__(self):
         """Validate field values after initialization."""
         # Validate 16-bit signed voltages (-32768 to 32767)
-        for field in ['trig_out_voltage', 'intensity_voltage', 'monitor_threshold_voltage']:
+        for field in ['input_trigger_voltage_threshold', 'trig_out_voltage', 'intensity_voltage', 'monitor_threshold_voltage']:
             value = getattr(self, field)
             if not (-32768 <= value <= 32767):
                 raise ValueError(f"{field} = {value} exceeds 16-bit signed range (-32768 to 32767)")
@@ -99,8 +103,8 @@ class DPDConfig:
             ((1 if self.fault_clear else 0) << 3)
         )
 
-        # CR2: Trigger output voltage (16-bit signed in lower 16 bits)
-        cr2 = self.trig_out_voltage & 0xFFFF
+        # CR2: Input trigger threshold [31:16] + Trigger output voltage [15:0]
+        cr2 = ((self.input_trigger_voltage_threshold & 0xFFFF) << 16) | (self.trig_out_voltage & 0xFFFF)
 
         # CR3: Intensity output voltage (16-bit signed in lower 16 bits)
         cr3 = self.intensity_voltage & 0xFFFF
@@ -164,6 +168,9 @@ class DPDConfig:
             f"  ext_trigger_in:     {self.ext_trigger_in}",
             f"  auto_rearm_enable:  {self.auto_rearm_enable}",
             f"  fault_clear:        {self.fault_clear}",
+            "",
+            "Input Trigger:",
+            f"  voltage_threshold:  {self.input_trigger_voltage_threshold} mV (hysteresis: -50mV)",
             "",
             "Trigger Output:",
             f"  voltage:            {self.trig_out_voltage} mV",
