@@ -128,8 +128,10 @@ class HardwareTestBase:
                      VerbosityLevel.VERBOSE)
 
         try:
-            self.osc = moku.get_instrument(osc_slot, Oscilloscope)
-            self.mcc = moku.get_instrument(cc_slot, CloudCompile)
+            # Use for_slot() pattern to access already-deployed instruments
+            # Note: bitstream parameter not needed since CloudCompile is already deployed
+            self.osc = Oscilloscope.for_slot(slot=osc_slot, multi_instrument=moku)
+            self.mcc = CloudCompile.for_slot(slot=cc_slot, multi_instrument=moku)
         except Exception as e:
             self.log(f"ERROR: Failed to get instruments: {e}", VerbosityLevel.MINIMAL)
             raise RuntimeError(
