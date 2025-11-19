@@ -48,7 +48,7 @@ def is_truncated_warning(self, line: str) -> bool:
     return any(regex.search(line) for regex in self.truncated_re)
 ```
 
-### 2. Created Stream Wrapper (`run_with_filter.py`)
+### 2. Created Stream Wrapper (integrated into `run.py`)
 
 **Key innovation:** Context manager that wraps `sys.stdout/stderr` during `cocotb_run()`:
 
@@ -134,47 +134,49 @@ INFO cocotb: 100360.00ns ERROR    cocotb.customwrapper               ✗ FORGE c
 
 ## Usage
 
-### Recommended (Filtered)
+### Default (Automatic Filtering)
 
 ```bash
-# Default - automatic aggressive filtering for P1 tests
-python run_with_filter.py
+# Filtering is now automatic - just use run.py!
+python run.py
 
-# Override filter level
-GHDL_FILTER=normal python run_with_filter.py
-GHDL_FILTER=minimal python run_with_filter.py
-GHDL_FILTER=none python run_with_filter.py
+# Override filter level if needed
+GHDL_FILTER=normal python run.py
+GHDL_FILTER=minimal python run.py
+GHDL_FILTER=none python run.py
 
 # Auto-selects based on verbosity
-COCOTB_VERBOSITY=MINIMAL python run_with_filter.py  # → aggressive
-COCOTB_VERBOSITY=NORMAL python run_with_filter.py   # → normal
-COCOTB_VERBOSITY=VERBOSE python run_with_filter.py  # → minimal
-COCOTB_VERBOSITY=DEBUG python run_with_filter.py    # → none
+COCOTB_VERBOSITY=MINIMAL python run.py  # → aggressive (default)
+COCOTB_VERBOSITY=NORMAL python run.py   # → normal
+COCOTB_VERBOSITY=VERBOSE python run.py  # → minimal
+COCOTB_VERBOSITY=DEBUG python run.py    # → none
 ```
 
-### Original (Unfiltered)
+### Unfiltered (if needed)
 
 ```bash
-# Use old runner if you need to see everything
-python run.py
+# Disable filtering
+GHDL_FILTER=none python run.py
+
+# Or use archived unfiltered runner
+python run_old.py
 ```
 
 ## Files Modified/Created
 
-| File | Status | Purpose |
-|------|--------|---------|
-| `ghdl_filter.py` | **UPDATED** | Added truncated patterns, CocoTB-aware matching, stats tracking |
-| `run_with_filter.py` | **NEW** | Drop-in replacement for `run.py` with real filtering |
-| `run_filtered.py` | EXPERIMENTAL | Subprocess-based approach (doesn't work with cocotb-test) |
-| `run.py` | UNCHANGED | Original runner, can still be used |
-| `FILTER_ANALYSIS.md` | **NEW** | Detailed analysis of the problem |
-| `FILTER_SOLUTION.md` | **NEW** | This file - solution documentation |
+| File                 | Status      | Purpose                                                         |
+| -------------------- | ----------- | --------------------------------------------------------------- |
+| `run.py`             | **REPLACED** | Now includes filtering by default                               |
+| `ghdl_filter.py`     | **UPDATED** | Added truncated patterns, CocoTB-aware matching, stats tracking |
+| `run_old.py`         | ARCHIVED    | Original unfiltered runner (for reference)                      |
+| `FILTER_ANALYSIS.md` | **NEW**     | Detailed analysis of the problem                                |
+| `FILTER_SOLUTION.md` | **NEW**     | This file - solution documentation                              |
 
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────┐
-│  run_with_filter.py                         │
+│  run.py (with integrated filtering)         │
 │  ┌──────────────────────────────────────┐   │
 │  │ with filtered_output(level):         │   │
 │  │   ┌──────────────────────────────┐   │   │

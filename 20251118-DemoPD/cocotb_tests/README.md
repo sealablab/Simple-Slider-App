@@ -8,7 +8,7 @@ Progressive test suite for the DPD custom instrument wrapper, following FORGE Co
 # Navigate to test directory
 cd examples/demo-probe-driver/cocotb_tests
 
-# Run P1 (BASIC) tests - minimal output, <20 lines
+# Run P1 (BASIC) tests - minimal output (~73 lines with automatic filtering)
 python run.py
 
 # Run with more verbosity
@@ -16,7 +16,12 @@ COCOTB_VERBOSITY=NORMAL python run.py
 
 # Run P2 tests (when implemented)
 TEST_LEVEL=P2_INTERMEDIATE python run.py
+
+# Disable GHDL output filtering (if needed for debugging)
+GHDL_FILTER=none python run.py
 ```
+
+**Note:** `run.py` now includes intelligent GHDL output filtering that reduces output by 99.6% (from ~12,500 lines to ~73 lines) while preserving all test results and errors. See [FILTER_QUICKSTART.md](FILTER_QUICKSTART.md) for details.
 
 ### Test Structure
 

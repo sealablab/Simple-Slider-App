@@ -49,26 +49,26 @@ def is_truncated_warning(self, line: str) -> bool:
 
 | File | Status | Purpose |
 |------|--------|---------|
-| **`run_with_filter.py`** | ✅ **NEW** | Drop-in replacement for `run.py` with working filter |
+| **`run.py`** | ✅ **REPLACED** | Now includes working filter by default |
 | **`ghdl_filter.py`** | ✅ **UPDATED** | Added truncated patterns, CocoTB matching, stats |
 | `FILTER_SOLUTION.md` | 📄 NEW | Comprehensive solution documentation |
 | `FILTER_ANALYSIS.md` | 📄 NEW | Problem analysis and root causes |
 | `FILTER_QUICKSTART.md` | 📄 NEW | Quick start guide for users |
-| `run.py` | ⚪ UNCHANGED | Original runner (still works, unfiltered) |
+| `run_old.py` | 📦 ARCHIVED | Original unfiltered runner (for reference) |
 
 ## Usage
 
-### Recommended (Filtered)
-
-```bash
-python run_with_filter.py
-# Output: ~73 lines (99.4% reduction)
-```
-
-### Original (Unfiltered)
+### Default (Filtered)
 
 ```bash
 python run.py
+# Output: ~73 lines (99.4% reduction)
+```
+
+### Disable Filtering (if needed)
+
+```bash
+GHDL_FILTER=none python run.py
 # Output: ~12,589 lines (no filtering)
 ```
 
@@ -105,34 +105,33 @@ python run.py
 ✅ **Preserves important info** - Errors, test results, summaries always shown
 ✅ **Transparent** - Filter summary shows what was hidden
 ✅ **Configurable** - 4 levels via environment variables
-✅ **Drop-in replacement** - Swap `run.py` → `run_with_filter.py`
-✅ **Backwards compatible** - Old `run.py` still works
+✅ **Default behavior** - `run.py` now filters by default
+✅ **Backwards compatible** - Unfiltered mode available via `GHDL_FILTER=none`
 
 ## Next Steps
 
 ### For Users
 
 ```bash
-# Start using filtered runner
-python run_with_filter.py
-
-# Or keep using old runner (unfiltered)
+# Just use run.py - filtering is now automatic!
 python run.py
+
+# Disable filtering if needed
+GHDL_FILTER=none python run.py
 ```
 
 ### For CI/CD
 
 ```bash
-# Update automation scripts
-- python run.py
-+ python run_with_filter.py
+# No changes needed - run.py now filters automatically
+python run.py
 ```
 
-### For Future Development
+### Migration Complete
 
-- Consider making `run_with_filter.py` the default
-- Optionally rename `run.py` → `run_unfiltered.py`
-- Update project documentation to reference new runner
+✅ `run.py` now includes filtering by default
+✅ Old unfiltered version saved as `run_old.py` for reference
+✅ All documentation updated
 
 ## Documentation
 
@@ -146,12 +145,12 @@ python run.py
 
 ## Key Takeaway
 
-**The filter is now production-ready and actually works!**
+**The filter is now production-ready and enabled by default!**
 
 - 99.4% output reduction
 - Zero loss of important information
-- Drop-in replacement for existing workflow
+- Seamless integration - just use `python run.py`
 - Bulletproof implementation with context manager
 - Transparent with filter statistics
 
-**Recommendation:** Start using `run_with_filter.py` for all test runs.
+**The filter is now the default behavior** - no action needed to benefit from it!

@@ -61,10 +61,10 @@ GHDL_FILTER=normal python run.py
 
 ## Expected Output Reduction
 
-| Test Type | Lines Before | Lines After | Reduction |
-|-----------|--------------|-------------|-----------|
-| P1 Basic  | ~500         | ~20         | 96%       |
-| P2 Intermediate | ~1200  | ~200        | 83%       |
+| Test Type       | Lines Before | Lines After | Reduction |
+| --------------- | ------------ | ----------- | --------- |
+| P1 Basic        | ~12,500      | ~73         | **99.6%** |
+| P2 Intermediate | TBD          | TBD         | TBD       |
 
 ---
 
@@ -89,25 +89,15 @@ GHDL_FILTER=none python run.py
 
 ## Files Modified
 
-- ✅ `run.py` - Auto-selects filter level
-- ✅ `conftest.py` - Updated documentation
-- ✅ `ghdl_filter.py` - Filter implementation (standalone)
-- ✅ `ghdl_filtered` - Bash wrapper (optional)
+- ✅ `run.py` - Now includes filtering by default
+- ✅ `ghdl_filter.py` - Filter implementation with CocoTB-aware patterns
+- 📦 `run_old.py` - Archived unfiltered runner (for reference)
 
 ---
 
-## Testing
+## More Information
 
-Verify filter works:
-```bash
-python3 test_ghdl_filter.py
-```
-
-Should output:
-```
-✅ All tests PASSED
-```
-
----
-
-**Full docs:** See [GHDL_FILTER_README.md](GHDL_FILTER_README.md)
+- **Quick Start:** [FILTER_QUICKSTART.md](FILTER_QUICKSTART.md) - Comprehensive quick start guide
+- **Technical Details:** [FILTER_SOLUTION.md](FILTER_SOLUTION.md) - Complete solution documentation
+- **Problem Analysis:** [FILTER_ANALYSIS.md](FILTER_ANALYSIS.md) - Root cause analysis
+- **Original Docs:** [GHDL_FILTER_README.md](GHDL_FILTER_README.md) - Original filter documentation

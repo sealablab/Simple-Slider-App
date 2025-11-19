@@ -2,16 +2,15 @@
 
 ## TL;DR
 
-Use `run_with_filter.py` instead of `run.py` for **99.6% output reduction**.
+**Filtering is now automatic!** Just use `python run.py` for **99.6% output reduction**.
 
 ```bash
-# Before: 12,589 lines of GHDL noise
+# Now: ~55 lines of clean output (automatic filtering)
 python run.py > output.log 2>&1
-wc -l output.log  # 12589
-
-# After: ~55 lines of clean output
-python run_with_filter.py > output.log 2>&1
 wc -l output.log  # 55
+
+# Before fix: 12,589 lines of GHDL noise
+# (old run.py archived as run_old.py)
 
 # Reduction: 99.6% 🎉
 ```
@@ -31,37 +30,38 @@ INFO cocotb: ../../src/ieee2008/numeric_std-body.vhdl:3117:7:@376ns:(assertion w
 
 ## Usage
 
-### Default (Recommended)
+### Default (Automatic Filtering)
 
 ```bash
-python run_with_filter.py
+python run.py
 ```
 
 Auto-selects `aggressive` filtering for P1 tests → 99.6% reduction.
+**No changes needed - filtering is now the default!**
 
 ### Control Filter Level
 
 ```bash
-# Maximum filtering (P1 tests, LLM workflows)
-GHDL_FILTER=aggressive python run_with_filter.py
+# Maximum filtering (P1 tests, LLM workflows) - DEFAULT
+GHDL_FILTER=aggressive python run.py
 
 # Balanced (P2 tests)
-GHDL_FILTER=normal python run_with_filter.py
+GHDL_FILTER=normal python run.py
 
 # Light filtering (P3 tests, debugging)
-GHDL_FILTER=minimal python run_with_filter.py
+GHDL_FILTER=minimal python run.py
 
 # No filtering (deep debugging)
-GHDL_FILTER=none python run_with_filter.py
+GHDL_FILTER=none python run.py
 ```
 
 ### Auto-Selection by Verbosity
 
 ```bash
-COCOTB_VERBOSITY=MINIMAL python run_with_filter.py   # → aggressive
-COCOTB_VERBOSITY=NORMAL python run_with_filter.py    # → normal
-COCOTB_VERBOSITY=VERBOSE python run_with_filter.py   # → minimal
-COCOTB_VERBOSITY=DEBUG python run_with_filter.py     # → none
+COCOTB_VERBOSITY=MINIMAL python run.py   # → aggressive (default)
+COCOTB_VERBOSITY=NORMAL python run.py    # → normal
+COCOTB_VERBOSITY=VERBOSE python run.py   # → minimal
+COCOTB_VERBOSITY=DEBUG python run.py     # → none
 ```
 
 ## What Gets Hidden
@@ -81,20 +81,20 @@ COCOTB_VERBOSITY=DEBUG python run_with_filter.py     # → none
 
 ## Output Example
 
-### Before (12,589 lines)
+### Before Fix (12,589 lines)
 
 ```bash
-$ python run.py 2>&1 | wc -l
+$ python run_old.py 2>&1 | wc -l
    12589
 
-$ python run.py 2>&1 | grep "vector truncated" | wc -l
+$ python run_old.py 2>&1 | grep "vector truncated" | wc -l
    12501
 ```
 
-### After (~55 lines)
+### After Fix (~55 lines)
 
 ```bash
-$ python run_with_filter.py
+$ python run.py
 
 ======================================================================
 Running dpd_wrapper tests
@@ -145,7 +145,7 @@ This transparency ensures you're not missing anything important.
 Try a less aggressive filter:
 
 ```bash
-GHDL_FILTER=minimal python run_with_filter.py
+GHDL_FILTER=minimal python run.py
 ```
 
 ### "Output is still too verbose"
@@ -153,7 +153,7 @@ GHDL_FILTER=minimal python run_with_filter.py
 Increase filter level:
 
 ```bash
-GHDL_FILTER=aggressive python run_with_filter.py
+GHDL_FILTER=aggressive python run.py
 ```
 
 ### "Filter hiding real errors?"
@@ -162,43 +162,36 @@ GHDL_FILTER=aggressive python run_with_filter.py
 
 ```bash
 # Disable filter temporarily
-GHDL_FILTER=none python run_with_filter.py
+GHDL_FILTER=none python run.py
 ```
 
-### "Want to see raw output"
+### "Want to see unfiltered output"
 
-Use the original runner:
+Disable the filter:
 
 ```bash
-python run.py
+GHDL_FILTER=none python run.py
 ```
 
 ## Migration Guide
 
-### If you're using `run.py`:
+### Good News: No Migration Needed!
 
-**No changes required!** `run.py` still works (unfiltered).
-
-To get filtering:
-```bash
-# Change this:
-python run.py
-
-# To this:
-python run_with_filter.py
-```
-
-### If you have automation scripts:
+**`run.py` now includes filtering by default** - your existing scripts will automatically benefit from 99.6% output reduction.
 
 ```bash
-# Old
+# Your existing command works and is now filtered:
 python run.py > output.log 2>&1
 
-# New (filtered)
-python run_with_filter.py > output.log 2>&1
+# If you need unfiltered output:
+GHDL_FILTER=none python run.py > output.log 2>&1
+```
 
-# Or keep old behavior
-python run.py > output.log 2>&1  # Still works!
+### Accessing Old Behavior
+
+```bash
+# Old unfiltered runner archived for reference:
+python run_old.py
 ```
 
 ## Performance
@@ -211,8 +204,8 @@ python run.py > output.log 2>&1  # Still works!
 
 | File | Purpose |
 |------|---------|
-| `run_with_filter.py` | **NEW** - Filtered runner (recommended) |
-| `run.py` | Original runner (unfiltered, still works) |
+| `run.py` | **UPDATED** - Now includes filtering by default |
+| `run_old.py` | Archived - Original unfiltered runner (for reference) |
 | `ghdl_filter.py` | Filter implementation (updated) |
 
 ## More Info
