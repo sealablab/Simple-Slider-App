@@ -35,7 +35,7 @@ except ImportError:
     sys.exit(1)
 
 # Import shared CLI utilities
-from moku_cli_common import connect_to_device, time_operation
+from moku_cli_common import connect_to_device, time_operation, setup_moku_debug_logging, parse_platform_id
 
 # Configure loguru with nice formatting
 logger.remove()  # Remove default handler
@@ -76,6 +76,9 @@ Examples:
   # Upload bitstream
   python debug_oscilloscope.py 192.168.8.98 --bitstream ./DPD-bits.tar
 
+  # Enable Moku debug logging
+  python debug_oscilloscope.py 192.168.8.98 --debug
+
   # Force connect
   python debug_oscilloscope.py 192.168.8.98 --force
         """,
@@ -85,12 +88,31 @@ Examples:
     parser.add_argument('device_ip', help='IP address of the Moku device')
     parser.add_argument('--osc-slot', type=int, default=1, help='Oscilloscope slot (default: 1)')
     parser.add_argument('--cc-slot', type=int, default=2, help='CloudCompile slot (default: 2)')
-    parser.add_argument('--platform', type=int, help='Platform ID (default: 2 for Moku:Go)')
+    parser.add_argument(
+        '--platform',
+        choices=['moku_go', 'moku_lab', 'moku_pro', 'moku_delta'],
+        help='Platform type (default: moku_go)'
+    )
     parser.add_argument('--bitstream', type=Path, help='Path to DPD bitstream file')
     parser.add_argument('--force', action='store_true', help='Force connection')
+    parser.add_argument(
+        '--debug',
+        nargs='?',
+        const=True,
+        type=str,
+        metavar='FILE',
+        help='Enable debug logging for Moku library. Optionally specify output file (default: stderr)'
+    )
 
     args = parser.parse_args()
-    platform_id = args.platform if args.platform else 2
+
+    # Enable Moku debug logging if requested
+    setup_moku_debug_logging(args)
+
+    # Parse platform ID from name
+    platform_id = parse_platform_id(args)
+    if platform_id is None:
+        platform_id = 2  # Default to Moku:Go
 
     # Resolve bitstream path
     bitstream_path = None
