@@ -22,14 +22,14 @@ uv sync  # Install dependencies
 ```bash
 # Option 1: From SimpleSliderApp root (recommended)
 cd /Users/johnycsh/workspace/SimpleSliderApp
-uv run python3 ./20251118-DemoPD/hardware_progressive_tests/run_hw_tests.py 192.168.8.98
+uv run python3 ./20251118-DemoPD/hardware_progressive_tests/run_hw_tests.py 192.168.8.98 --bitstream ./path/to/DPD-bits.tar
 
 # Option 2: From hardware_progressive_tests directory
 cd 20251118-DemoPD/hardware_progressive_tests
-uv run python3 run_hw_tests.py 192.168.8.98
+uv run python3 run_hw_tests.py 192.168.8.98 --bitstream ../DPD-bits.tar
 
 # Verbose output (recommended for first run)
-uv run python3 run_hw_tests.py 192.168.8.98 --verbose
+uv run python3 run_hw_tests.py 192.168.8.98 --bitstream ../DPD-bits.tar --verbose
 ```
 
 ### Expected Output (MINIMAL)

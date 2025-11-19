@@ -122,6 +122,12 @@ Examples:
     parser.add_argument('--osc-slot', type=int, default=1, help='Oscilloscope slot (default: 1)')
     parser.add_argument('--cc-slot', type=int, default=2, help='CloudCompile slot (default: 2)')
     parser.add_argument(
+        '--bitstream',
+        type=str,
+        required=True,
+        help='Path to DPD bitstream file (required for CloudCompile access)'
+    )
+    parser.add_argument(
         '--level',
         choices=['P1', 'P2', 'P3'],
         default=os.environ.get('HW_TEST_LEVEL', 'P1'),
@@ -201,7 +207,7 @@ Examples:
             logger.info("\n" + "=" * 70)
             logger.info("Running P1 (BASIC) Tests")
             logger.info("=" * 70)
-            p1_tests = P1_HardwareBasicTests(moku, args.osc_slot, args.cc_slot, verbosity)
+            p1_tests = P1_HardwareBasicTests(moku, args.osc_slot, args.cc_slot, args.bitstream, verbosity)
             p1_passed = p1_tests.run_all_tests(TestLevel.P1_BASIC)
             all_passed = all_passed and p1_passed
 
@@ -209,7 +215,7 @@ Examples:
             logger.info("\n" + "=" * 70)
             logger.info("Running P2 (INTERMEDIATE) Tests")
             logger.info("=" * 70)
-            p2_tests = P2_HardwareIntermediateTests(moku, args.osc_slot, args.cc_slot, verbosity)
+            p2_tests = P2_HardwareIntermediateTests(moku, args.osc_slot, args.cc_slot, args.bitstream, verbosity)
             p2_passed = p2_tests.run_all_tests(TestLevel.P2_INTERMEDIATE)
             all_passed = all_passed and p2_passed
 
@@ -217,7 +223,7 @@ Examples:
             logger.info("\n" + "=" * 70)
             logger.info("Running P3 (COMPREHENSIVE) Tests")
             logger.info("=" * 70)
-            p3_tests = P3_HardwareComprehensiveTests(moku, args.osc_slot, args.cc_slot, verbosity)
+            p3_tests = P3_HardwareComprehensiveTests(moku, args.osc_slot, args.cc_slot, args.bitstream, verbosity)
             p3_passed = p3_tests.run_all_tests(TestLevel.P3_COMPREHENSIVE)
             all_passed = all_passed and p3_passed
 

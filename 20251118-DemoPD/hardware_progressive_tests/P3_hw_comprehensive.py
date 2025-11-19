@@ -24,7 +24,7 @@ from hw_test_base import HardwareTestBase, VerbosityLevel
 class P3_HardwareComprehensiveTests(HardwareTestBase):
     """P3 (COMPREHENSIVE) hardware tests for Demo Probe Driver."""
 
-    def __init__(self, moku, osc_slot=1, cc_slot=2,
+    def __init__(self, moku, osc_slot=1, cc_slot=2, bitstream=None,
                  verbosity=VerbosityLevel.MINIMAL):
         """
         Initialize P3 hardware test suite.
@@ -33,9 +33,10 @@ class P3_HardwareComprehensiveTests(HardwareTestBase):
             moku: Connected MultiInstrument instance
             osc_slot: Oscilloscope slot number (default: 1)
             cc_slot: CloudCompile slot number (default: 2)
+            bitstream: Path to CloudCompile bitstream
             verbosity: Output verbosity level
         """
-        super().__init__(moku, "P3_HW_COMPREHENSIVE", osc_slot, cc_slot, verbosity)
+        super().__init__(moku, "P3_HW_COMPREHENSIVE", osc_slot, cc_slot, bitstream, verbosity)
 
     def run_p3_comprehensive(self):
         """P3 test suite entry point - comprehensive tests."""

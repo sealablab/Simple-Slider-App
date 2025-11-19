@@ -19,17 +19,17 @@
 ```bash
 # From SimpleSliderApp root (recommended)
 cd /path/to/SimpleSliderApp
-uv run python3 ./20251118-DemoPD/hardware_progressive_tests/run_hw_tests.py 192.168.8.98
+uv run python3 ./20251118-DemoPD/hardware_progressive_tests/run_hw_tests.py 192.168.8.98 --bitstream ./path/to/DPD-bits.tar
 
 # Or from hardware_progressive_tests directory
 cd 20251118-DemoPD/hardware_progressive_tests
-uv run python3 run_hw_tests.py 192.168.8.98
+uv run python3 run_hw_tests.py 192.168.8.98 --bitstream ../DPD-bits.tar
 
 # Run with verbose output
-uv run python3 run_hw_tests.py 192.168.8.98 --verbose
+uv run python3 run_hw_tests.py 192.168.8.98 --bitstream ../DPD-bits.tar --verbose
 
 # Specify slots explicitly (if different from defaults)
-uv run python3 run_hw_tests.py 192.168.8.98 --osc-slot 1 --cc-slot 2
+uv run python3 run_hw_tests.py 192.168.8.98 --bitstream ../DPD-bits.tar --osc-slot 1 --cc-slot 2
 ```
 
 **Note:** Use `uv run` to ensure the correct Python environment with all dependencies.
@@ -83,7 +83,7 @@ ALL 6 TESTS PASSED
 **Runtime:** <2 minutes
 
 ```bash
-python run_hw_tests.py 192.168.8.98
+python run_hw_tests.py 192.168.8.98 --bitstream ./DPD-bits.tar
 ```
 
 ### P2 - INTERMEDIATE (Stub Only)
@@ -100,7 +100,7 @@ python run_hw_tests.py 192.168.8.98
 **Runtime:** <5 minutes (when implemented)
 
 ```bash
-python run_hw_tests.py 192.168.8.98 --level P2
+python run_hw_tests.py 192.168.8.98 --bitstream ./DPD-bits.tar --level P2
 ```
 
 ### P3 - COMPREHENSIVE (Stub Only)
@@ -116,7 +116,7 @@ python run_hw_tests.py 192.168.8.98 --level P2
 **Runtime:** <15 minutes (when implemented)
 
 ```bash
-python run_hw_tests.py 192.168.8.98 --level P3
+python run_hw_tests.py 192.168.8.98 --bitstream ./DPD-bits.tar --level P3
 ```
 
 ---
@@ -249,7 +249,7 @@ Control output detail with `--verbosity` or `--verbose`:
 ### MINIMAL (Default)
 
 ```bash
-python run_hw_tests.py 192.168.8.98
+python run_hw_tests.py 192.168.8.98 --bitstream ./DPD-bits.tar
 ```
 
 **Output:** Test names + PASS/FAIL only (~10 lines)
@@ -257,7 +257,7 @@ python run_hw_tests.py 192.168.8.98
 ### NORMAL
 
 ```bash
-python run_hw_tests.py 192.168.8.98 --verbosity NORMAL
+python run_hw_tests.py 192.168.8.98 --bitstream ./DPD-bits.tar --verbosity NORMAL
 ```
 
 **Output:** Progress indicators + results (~30 lines)
@@ -265,9 +265,9 @@ python run_hw_tests.py 192.168.8.98 --verbosity NORMAL
 ### VERBOSE
 
 ```bash
-python run_hw_tests.py 192.168.8.98 --verbose
+python run_hw_tests.py 192.168.8.98 --bitstream ./DPD-bits.tar --verbose
 # OR
-python run_hw_tests.py 192.168.8.98 --verbosity VERBOSE
+python run_hw_tests.py 192.168.8.98 --bitstream ./DPD-bits.tar --verbosity VERBOSE
 ```
 
 **Output:** Detailed step-by-step execution (~100 lines)
@@ -275,7 +275,7 @@ python run_hw_tests.py 192.168.8.98 --verbosity VERBOSE
 ### DEBUG
 
 ```bash
-python run_hw_tests.py 192.168.8.98 --verbosity DEBUG
+python run_hw_tests.py 192.168.8.98 --bitstream ./DPD-bits.tar --verbosity DEBUG
 ```
 
 **Output:** Full debug information, including oscilloscope readings
@@ -285,10 +285,11 @@ python run_hw_tests.py 192.168.8.98 --verbosity DEBUG
 ## Command-Line Reference
 
 ```bash
-python run_hw_tests.py <device_ip> [OPTIONS]
+python run_hw_tests.py <device_ip> --bitstream <path> [OPTIONS]
 
 Required:
   device_ip              IP address of Moku device (e.g., 192.168.8.98)
+  --bitstream PATH       Path to DPD bitstream file (e.g., ./DPD-bits.tar)
 
 Options:
   --osc-slot SLOT        Oscilloscope slot number (default: 1)
@@ -307,11 +308,11 @@ Options:
 ```bash
 # Set default test level
 export HW_TEST_LEVEL=P2
-python run_hw_tests.py 192.168.8.98
+python run_hw_tests.py 192.168.8.98 --bitstream ./DPD-bits.tar
 
 # Set default verbosity
 export HW_TEST_VERBOSITY=VERBOSE
-python run_hw_tests.py 192.168.8.98
+python run_hw_tests.py 192.168.8.98 --bitstream ./DPD-bits.tar
 ```
 
 ---
@@ -369,10 +370,10 @@ If routing is missing, tests will automatically configure it.
 
 ```bash
 # See detailed state transitions
-python run_hw_tests.py 192.168.8.98 --verbose
+python run_hw_tests.py 192.168.8.98 --bitstream ./DPD-bits.tar --verbose
 
 # See all oscilloscope readings
-python run_hw_tests.py 192.168.8.98 --verbosity DEBUG
+python run_hw_tests.py 192.168.8.98 --bitstream ./DPD-bits.tar --verbosity DEBUG
 ```
 
 ### Use Interactive Debugger
@@ -435,7 +436,7 @@ def run_p2_intermediate(self):
 3. **Run P2 tests:**
 
 ```bash
-python run_hw_tests.py 192.168.8.98 --level P2
+python run_hw_tests.py 192.168.8.98 --bitstream ./DPD-bits.tar --level P2
 ```
 
 ---

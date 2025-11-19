@@ -41,7 +41,7 @@ from hw_test_constants import (
 class P1_HardwareBasicTests(HardwareTestBase):
     """P1 (BASIC) hardware tests for Demo Probe Driver."""
 
-    def __init__(self, moku, osc_slot=1, cc_slot=2,
+    def __init__(self, moku, osc_slot=1, cc_slot=2, bitstream=None,
                  verbosity=VerbosityLevel.MINIMAL):
         """
         Initialize P1 hardware test suite.
@@ -50,9 +50,10 @@ class P1_HardwareBasicTests(HardwareTestBase):
             moku: Connected MultiInstrument instance
             osc_slot: Oscilloscope slot number (default: 1)
             cc_slot: CloudCompile slot number (default: 2)
+            bitstream: Path to CloudCompile bitstream
             verbosity: Output verbosity level
         """
-        super().__init__(moku, "P1_HW_BASIC", osc_slot, cc_slot, verbosity)
+        super().__init__(moku, "P1_HW_BASIC", osc_slot, cc_slot, bitstream, verbosity)
 
     def run_p1_basic(self):
         """P1 test suite entry point - 5 essential tests."""

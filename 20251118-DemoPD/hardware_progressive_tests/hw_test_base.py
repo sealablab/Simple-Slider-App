@@ -96,6 +96,7 @@ class HardwareTestBase:
 
     def __init__(self, moku: MultiInstrument, test_name: str,
                  osc_slot: int = 1, cc_slot: int = 2,
+                 bitstream: str = None,
                  verbosity: VerbosityLevel = VerbosityLevel.MINIMAL,
                  validate_instruments: bool = True):
         """
@@ -106,6 +107,7 @@ class HardwareTestBase:
             test_name: Name of test suite
             osc_slot: Oscilloscope slot number (default: 1)
             cc_slot: CloudCompile slot number (default: 2)
+            bitstream: Path to CloudCompile bitstream (required for CloudCompile.for_slot)
             verbosity: Output verbosity level
             validate_instruments: If True, validate instruments are deployed
         """
@@ -113,6 +115,7 @@ class HardwareTestBase:
         self.test_name = test_name
         self.osc_slot = osc_slot
         self.cc_slot = cc_slot
+        self.bitstream = bitstream
         self.verbosity = verbosity
 
         # Track test results
@@ -129,9 +132,12 @@ class HardwareTestBase:
 
         try:
             # Use for_slot() pattern to access already-deployed instruments
-            # Note: bitstream parameter not needed since CloudCompile is already deployed
             self.osc = Oscilloscope.for_slot(slot=osc_slot, multi_instrument=moku)
-            self.mcc = CloudCompile.for_slot(slot=cc_slot, multi_instrument=moku)
+
+            # CloudCompile requires bitstream parameter even when accessing existing deployment
+            if bitstream is None:
+                raise ValueError("bitstream parameter is required for CloudCompile.for_slot()")
+            self.mcc = CloudCompile.for_slot(slot=cc_slot, multi_instrument=moku, bitstream=bitstream)
         except Exception as e:
             self.log(f"ERROR: Failed to get instruments: {e}", VerbosityLevel.MINIMAL)
             raise RuntimeError(

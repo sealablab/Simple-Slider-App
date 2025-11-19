@@ -24,7 +24,7 @@ from hw_test_base import HardwareTestBase, VerbosityLevel
 class P2_HardwareIntermediateTests(HardwareTestBase):
     """P2 (INTERMEDIATE) hardware tests for Demo Probe Driver."""
 
-    def __init__(self, moku, osc_slot=1, cc_slot=2,
+    def __init__(self, moku, osc_slot=1, cc_slot=2, bitstream=None,
                  verbosity=VerbosityLevel.MINIMAL):
         """
         Initialize P2 hardware test suite.
@@ -33,9 +33,10 @@ class P2_HardwareIntermediateTests(HardwareTestBase):
             moku: Connected MultiInstrument instance
             osc_slot: Oscilloscope slot number (default: 1)
             cc_slot: CloudCompile slot number (default: 2)
+            bitstream: Path to CloudCompile bitstream
             verbosity: Output verbosity level
         """
-        super().__init__(moku, "P2_HW_INTERMEDIATE", osc_slot, cc_slot, verbosity)
+        super().__init__(moku, "P2_HW_INTERMEDIATE", osc_slot, cc_slot, bitstream, verbosity)
 
     def run_p2_intermediate(self):
         """P2 test suite entry point - intermediate tests."""
