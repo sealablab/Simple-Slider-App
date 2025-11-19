@@ -12,11 +12,12 @@
 -- Clock Frequency: 125 MHz (8 ns period)
 --
 -- FSM States (std_logic_vector encoding - Verilog compatible):
---   IDLE     (000000) - Waiting for arm signal
---   ARMED    (000001) - Waiting for trigger or timeout
---   FIRING   (000010) - Driving outputs (trigger + intensity pulses)
---   COOLDOWN (000011) - Thermal safety delay between pulses
---   FAULT    (111111) - Sticky fault state (requires fault_clear)
+--   INITIALIZING (000000) - Latching and validating registers after reset/fault
+--   IDLE         (000001) - Waiting for arm signal
+--   ARMED        (000010) - Waiting for trigger or timeout
+--   FIRING       (000011) - Driving outputs (trigger + intensity pulses)
+--   COOLDOWN     (000100) - Thermal safety delay between pulses
+--   FAULT        (111111) - Sticky fault state (requires fault_clear)
 --
 -- Layer 3 of 3-Layer Forge Architecture:
 --   Layer 1: MCC_TOP_forge_loader.vhd (static, shared)
@@ -108,22 +109,35 @@ architecture rtl of DPD_main is
     ----------------------------------------------------------------------------
     -- FSM State Constants (6-bit encoding for fsm_observer compatibility)
     ----------------------------------------------------------------------------
-    constant STATE_IDLE     : std_logic_vector(5 downto 0) := "000000";
-    constant STATE_ARMED    : std_logic_vector(5 downto 0) := "000001";
-    constant STATE_FIRING   : std_logic_vector(5 downto 0) := "000010";
-    constant STATE_COOLDOWN : std_logic_vector(5 downto 0) := "000011";
-    constant STATE_FAULT    : std_logic_vector(5 downto 0) := "111111";
+    constant STATE_INITIALIZING : std_logic_vector(5 downto 0) := "000000";  -- 0: Register latch/validation
+    constant STATE_IDLE         : std_logic_vector(5 downto 0) := "000001";  -- 1: Waiting for arm signal
+    constant STATE_ARMED        : std_logic_vector(5 downto 0) := "000010";  -- 2: Waiting for trigger
+    constant STATE_FIRING       : std_logic_vector(5 downto 0) := "000011";  -- 3: Driving outputs
+    constant STATE_COOLDOWN     : std_logic_vector(5 downto 0) := "000100";  -- 4: Thermal safety delay
+    constant STATE_FAULT        : std_logic_vector(5 downto 0) := "111111";  -- 63: Sticky fault
 
     ----------------------------------------------------------------------------
     -- State Machine Signals
     ----------------------------------------------------------------------------
-    signal state      : std_logic_vector(5 downto 0);
+    signal state      : std_logic_vector(5 downto 0) := STATE_INITIALIZING;  -- Power-up safe default
     signal next_state : std_logic_vector(5 downto 0);
 
     ----------------------------------------------------------------------------
     -- Note: All timing parameters now arrive as clock cycles from Python client
     -- No conversion needed - these signals map directly to input ports
     ----------------------------------------------------------------------------
+
+    ----------------------------------------------------------------------------
+    -- Latched Register Values
+    -- These are captured atomically in INITIALIZING state to prevent race
+    -- conditions from asynchronous network register updates
+    ----------------------------------------------------------------------------
+    signal latched_trig_out_voltage     : signed(15 downto 0);
+    signal latched_trig_out_duration    : unsigned(31 downto 0);
+    signal latched_intensity_voltage    : signed(15 downto 0);
+    signal latched_intensity_duration   : unsigned(31 downto 0);
+    signal latched_trigger_wait_timeout : unsigned(31 downto 0);
+    signal latched_cooldown_interval    : unsigned(31 downto 0);
 
     ----------------------------------------------------------------------------
     -- Timing Counters
@@ -224,7 +238,7 @@ begin
     begin
         if rising_edge(Clk) then
             if Reset = '1' then
-                state <= STATE_IDLE;
+                state <= STATE_INITIALIZING;  -- Reset → INITIALIZING (not IDLE)
             elsif Enable = '1' and ClkEn = '1' then
                 state <= next_state;
             end if;
@@ -239,12 +253,27 @@ begin
     FSM_NEXT_STATE: process(state, timeout_occurred, firing_complete,
                            cooldown_complete, auto_rearm_enable,
                            fault_clear_edge, fault_detected, arm_enable,
-                           ext_trigger_in)
+                           ext_trigger_in, trig_out_duration, intensity_duration,
+                           trigger_wait_timeout, cooldown_interval)
     begin
         -- Default: hold current state
         next_state <= state;
 
         case state is
+            when STATE_INITIALIZING =>
+                -- Validate timing registers before transitioning to IDLE
+                -- This prevents FSM from operating with zero/invalid timing values
+                if (trig_out_duration > 0 and
+                    intensity_duration > 0 and
+                    trigger_wait_timeout > 0 and
+                    cooldown_interval > 0) then
+                    -- All timing registers valid → safe to proceed
+                    next_state <= STATE_IDLE;
+                else
+                    -- Invalid configuration → fault state
+                    next_state <= STATE_FAULT;
+                end if;
+
             when STATE_IDLE =>
                 -- Transition to ARMED when arm_enable asserted
                 if arm_enable = '1' then
@@ -279,8 +308,8 @@ begin
 
             when STATE_FAULT =>
                 if fault_clear_edge = '1' then
-                    -- Acknowledge fault and return to safe state
-                    next_state <= STATE_IDLE;
+                    -- Acknowledge fault and re-validate registers
+                    next_state <= STATE_INITIALIZING;
                 end if;
 
             when others =>
@@ -312,9 +341,35 @@ begin
                 monitor_duration_timer <= (others => '0');
                 monitor_window_open <= '0';
                 monitor_triggered <= '0';
+                -- Reset latched registers to safe defaults
+                latched_trig_out_voltage     <= (others => '0');
+                latched_trig_out_duration    <= (others => '0');
+                latched_intensity_voltage    <= (others => '0');
+                latched_intensity_duration   <= (others => '0');
+                latched_trigger_wait_timeout <= (others => '0');
+                latched_cooldown_interval    <= (others => '0');
 
             elsif Enable = '1' and ClkEn = '1' then
                 case state is
+                    when STATE_INITIALIZING =>
+                        -- Atomically latch all timing/voltage registers
+                        -- This prevents race conditions from async network register updates
+                        latched_trig_out_voltage     <= trig_out_voltage;
+                        latched_trig_out_duration    <= trig_out_duration;
+                        latched_intensity_voltage    <= intensity_voltage;
+                        latched_intensity_duration   <= intensity_duration;
+                        latched_trigger_wait_timeout <= trigger_wait_timeout;
+                        latched_cooldown_interval    <= cooldown_interval;
+                        -- Reset all counters
+                        armed_timer <= (others => '0');
+                        trig_out_timer <= (others => '0');
+                        intensity_timer <= (others => '0');
+                        cooldown_timer <= (others => '0');
+                        monitor_start_timer <= (others => '0');
+                        monitor_duration_timer <= (others => '0');
+                        monitor_window_open <= '0';
+                        monitor_triggered <= '0';
+
                     when STATE_IDLE =>
                         -- Reset all counters
                         armed_timer <= (others => '0');
@@ -328,18 +383,18 @@ begin
 
                     when STATE_ARMED =>
                         -- Increment timeout counter
-                        if armed_timer < trigger_wait_timeout then
+                        if armed_timer < latched_trigger_wait_timeout then
                             armed_timer <= armed_timer + 1;
                         end if;
 
                     when STATE_FIRING =>
                         -- Trigger output pulse timing
-                        if trig_out_timer < trig_out_duration then
+                        if trig_out_timer < latched_trig_out_duration then
                             trig_out_timer <= trig_out_timer + 1;
                         end if;
 
                         -- Intensity output pulse timing
-                        if intensity_timer < intensity_duration then
+                        if intensity_timer < latched_intensity_duration then
                             intensity_timer <= intensity_timer + 1;
                         end if;
 
@@ -366,7 +421,7 @@ begin
 
                     when STATE_COOLDOWN =>
                         -- Increment cooldown counter
-                        if cooldown_timer < cooldown_interval then
+                        if cooldown_timer < latched_cooldown_interval then
                             cooldown_timer <= cooldown_timer + 1;
                         end if;
 
@@ -398,9 +453,9 @@ begin
             if Enable = '1' then
                 -- Control outputs based on FSM state
                 if state = STATE_FIRING then
-                    -- During FIRING: output voltage signals to probe
-                    trig_out <= trig_out_voltage;
-                    intensity_out <= intensity_voltage;
+                    -- During FIRING: output latched voltage signals to probe
+                    trig_out <= latched_trig_out_voltage;
+                    intensity_out <= latched_intensity_voltage;
                 else
                     -- Safe state: zero outputs
                     trig_out <= (others => '0');
@@ -449,25 +504,25 @@ begin
     ------------------------------------------------------------------------
     -- Status Flags (Combinational)
     --
-    -- Derive control flags from counter values
+    -- Derive control flags from counter values using latched register values
     ------------------------------------------------------------------------
-    timeout_occurred  <= '1' when (armed_timer >= trigger_wait_timeout) else '0';
-    firing_complete   <= '1' when (trig_out_timer >= trig_out_duration
-                                   and intensity_timer >= intensity_duration
+    timeout_occurred  <= '1' when (armed_timer >= latched_trigger_wait_timeout) else '0';
+    firing_complete   <= '1' when (trig_out_timer >= latched_trig_out_duration
+                                   and intensity_timer >= latched_intensity_duration
                                    and state = STATE_FIRING) else '0';
-    cooldown_complete <= '1' when (cooldown_timer >= cooldown_interval) else '0';
+    cooldown_complete <= '1' when (cooldown_timer >= latched_cooldown_interval) else '0';
 
     ------------------------------------------------------------------------
     -- Fault Detection Logic
     --
     -- Detect safety violations
     ------------------------------------------------------------------------
-    FAULT_DETECTION: process(state, armed_timer, trigger_wait_timeout)
+    FAULT_DETECTION: process(state, armed_timer, latched_trigger_wait_timeout)
     begin
         fault_detected <= '0';  -- Default: no fault
 
         -- Detect timeout in ARMED state
-        if state = STATE_ARMED and armed_timer > trigger_wait_timeout then
+        if state = STATE_ARMED and armed_timer > latched_trigger_wait_timeout then
             fault_detected <= '1';
         end if;
 
